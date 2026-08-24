@@ -328,8 +328,8 @@ export default function App() {
     }
   };
 
-  // Main Tabs State: "noticias", "empresa", "planes_fichas", "comercial", "plataforma_prueba", "kpier", "mlm", "distribucion_firmas", "soporte", "dashboard", "validacion_accesos"
-  const [mainTab, setMainTab] = useState<"noticias" | "empresa" | "planes_fichas" | "comercial" | "plataforma_prueba" | "kpier" | "mlm" | "distribucion_firmas" | "soporte" | "dashboard" | "validacion_accesos">("noticias");
+  // Main Tabs State: "noticias", "empresa", "planes_fichas", "comercial", "arte_visual", "plataforma_prueba", "kpier", "mlm", "distribucion_firmas", "soporte", "dashboard", "validacion_accesos"
+  const [mainTab, setMainTab] = useState<"noticias" | "empresa" | "planes_fichas" | "comercial" | "arte_visual" | "plataforma_prueba" | "kpier" | "mlm" | "distribucion_firmas" | "soporte" | "dashboard" | "validacion_accesos">("noticias");
 
   // Puntos Acumulados del Socio Activo (sincronizado con ventas, eventos y canjes)
   const [socioPointsBalance, setSocioPointsBalance] = useState<number>(() => calculateActiveSocioPoints());
@@ -2321,7 +2321,7 @@ export default function App() {
                 <button
                   onClick={() => {
                     setMainTab("comercial");
-                    if (!["simulador", "plan", "firmas", "arte_visual", "contador"].includes(activeTab)) {
+                    if (!["simulador", "plan", "firmas", "contador"].includes(activeTab)) {
                       setActiveTab("simulador");
                     }
                   }}
@@ -2333,6 +2333,21 @@ export default function App() {
                 >
                   <Briefcase className={`w-4 h-4 ${mainTab === "comercial" ? "text-purple-600" : "text-purple-500"}`} />
                   <span className="font-extrabold tracking-wide">COMERCIAL</span>
+                </button>
+              )}
+
+              {/* Tab 3.2: Arte Visual (Principal al lado de COMERCIAL) */}
+              {(userPerms.arte_visual !== false && userPerms.sub_comercial_arte_visual !== false) && (
+                <button
+                  onClick={() => setMainTab("arte_visual")}
+                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
+                    mainTab === "arte_visual"
+                      ? "border-pink-600 text-pink-600 font-black bg-pink-50/70 rounded-t-lg"
+                      : "border-transparent text-pink-600 hover:text-pink-700 hover:border-pink-300 font-bold"
+                  }`}
+                >
+                  <Sparkles className={`w-4 h-4 ${mainTab === "arte_visual" ? "text-pink-600" : "text-pink-500"}`} />
+                  <span className="font-extrabold tracking-wide">Arte Visual</span>
                 </button>
               )}
 
@@ -2351,7 +2366,7 @@ export default function App() {
                 </button>
               )}
 
-              {/* Tab 4: KPIER */}
+              {/* Tab 4: Calcula tu comisión */}
               {userPerms.kpier && (
                 <button
                   onClick={() => {
@@ -2372,8 +2387,8 @@ export default function App() {
                       : "border-transparent text-emerald-600 hover:text-emerald-700 hover:border-emerald-300 font-bold"
                   }`}
                 >
-                  <BarChart3 className={`w-4 h-4 ${mainTab === "kpier" ? "text-emerald-600" : "text-emerald-500"}`} />
-                  <span className="font-extrabold tracking-wide">KPIER</span>
+                  <Calculator className={`w-4 h-4 ${mainTab === "kpier" ? "text-emerald-600" : "text-emerald-500"}`} />
+                  <span className="font-extrabold tracking-wide">Calcula tu comisión</span>
                 </button>
               )}
 
@@ -2480,20 +2495,7 @@ export default function App() {
                 Firmas
               </button>
 
-              {/* 3. Arte Visual */}
-              {(userRole === "admin" || userRole === "gerencia" || userPerms.sub_comercial_arte_visual) && (
-                <button
-                  onClick={() => { setMainTab("comercial"); setActiveTab("arte_visual"); }}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                    activeTab === "arte_visual" ? "bg-[#0B2545] text-white shadow-xs" : "text-slate-700 hover:bg-purple-100/80"
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Arte Visual</span>
-                </button>
-              )}
-
-              {/* 4. Cotizador */}
+              {/* 3. Cotizador */}
               <button
                 onClick={() => { setMainTab("comercial"); setActiveTab("simulador"); }}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
@@ -5164,7 +5166,7 @@ export default function App() {
 
 
         {/* ==================================== TABS: ARTE VISUAL & IA ==================================== */}
-        {mainTab === "comercial" && activeTab === "arte_visual" && <ArteVisualModule />}
+        {(mainTab === "arte_visual" || (mainTab === "comercial" && activeTab === "arte_visual")) && <ArteVisualModule />}
 
         {/* ==================================== TABS: PLAN CONTADOR ==================================== */}
         {mainTab === "comercial" && activeTab === "contador" && <ContadorModule />}

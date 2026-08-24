@@ -21,6 +21,7 @@ import {
   Key,
   UserCheck,
   Gift,
+  Calculator,
 } from "lucide-react";
 import {
   PermissionsMap,
@@ -161,8 +162,9 @@ export function TablaValidacionAccesos() {
     { key: "dashboard", label: "Dashboard Gerencial", icon: <LayoutDashboard className="w-4 h-4 text-indigo-600" />, desc: "Panel de control estadístico consolidado" },
     { key: "planes_fichas", label: "Planes y Fichas Técnicas", icon: <Layers className="w-4 h-4 text-purple-600" />, desc: "Fichas de productos, ERP, Facturación y Firmas" },
     { key: "comercial", label: "Comercial", icon: <ShoppingBag className="w-4 h-4 text-purple-600" />, desc: "Simulador de precios y ventas comerciales" },
+    { key: "arte_visual", label: "Arte Visual", icon: <Sparkles className="w-4 h-4 text-pink-600" />, desc: "Generador de artes publicitarias y recursos visuales" },
     { key: "plataforma_prueba", label: "Plataforma de prueba", icon: <Sliders className="w-4 h-4 text-purple-600" />, desc: "Catálogo interactivo y prueba de planes y fichas técnicas" },
-    { key: "kpier", label: "Red KPIer", icon: <BarChart3 className="w-4 h-4 text-emerald-600" />, desc: "Módulo de comisiones y liquidaciones" },
+    { key: "kpier", label: "Calcula tu comisión", icon: <Calculator className="w-4 h-4 text-emerald-600" />, desc: "Calculadora interactiva de prueba y simulación de comisiones" },
     { key: "mlm", label: "Red MLM", icon: <Globe className="w-4 h-4 text-cyan-600" />, desc: "Estructura de red y comisiones multinivel" },
     { key: "distribucion_firmas", label: "Plataforma Connect", icon: <ShieldCheck className="w-4 h-4 text-sky-600" />, desc: "Gestión y entrega de firmas electrónicas ANF" },
     { key: "soporte", label: "Soporte Técnico", icon: <HelpCircle className="w-4 h-4 text-rose-600" />, desc: "Canales de soporte y mesas de ayuda" },

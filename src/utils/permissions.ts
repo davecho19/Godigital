@@ -9,6 +9,7 @@ export interface TabPermissionConfig {
   mlm: boolean;
   distribucion_firmas: boolean;
   plataforma_prueba?: boolean;
+  arte_visual?: boolean;
   soporte: boolean;
   dashboard: boolean;
   socios_registrados?: boolean;
@@ -58,6 +59,7 @@ export const DEFAULT_PERMISSIONS_SISTEMAS: TabPermissionConfig = {
   noticias: true,
   planes_fichas: true,
   comercial: true,
+  arte_visual: true,
   kpier: true,
   mlm: false,
   distribucion_firmas: false,
@@ -90,6 +92,7 @@ export const DEFAULT_PERMISSIONS_FIRMAS: TabPermissionConfig = {
   noticias: true,
   planes_fichas: true,
   comercial: false,
+  arte_visual: false,
   kpier: true,
   mlm: false,
   distribucion_firmas: true,
@@ -122,6 +125,7 @@ export const DEFAULT_PERMISSIONS_TOTAL: TabPermissionConfig = {
   noticias: true,
   planes_fichas: true,
   comercial: true,
+  arte_visual: true,
   kpier: true,
   mlm: true,
   distribucion_firmas: true,
