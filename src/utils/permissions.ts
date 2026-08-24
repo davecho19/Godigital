@@ -52,24 +52,25 @@ export interface RolePermissions {
 
 export type PermissionsMap = Record<string, RolePermissions>;
 
-const LOCAL_STORAGE_PERMISSIONS_KEY = "kpier_tab_permissions_v4";
+const LOCAL_STORAGE_PERMISSIONS_KEY = "kpier_tab_permissions_v5";
 
 export const DEFAULT_PERMISSIONS_SISTEMAS: TabPermissionConfig = {
   empresa: true,
-  noticias: true,
+  noticias: false,
   planes_fichas: true,
   comercial: true,
   arte_visual: true,
   kpier: true,
   mlm: false,
   distribucion_firmas: false,
-  soporte: true,
+  plataforma_prueba: true,
+  soporte: false,
   dashboard: false,
 
   sub_empresa_anf: false,
   sub_empresa_upconta: true,
 
-  sub_soporte_upconta: true,
+  sub_soporte_upconta: false,
   sub_soporte_anf: false,
 
   sub_planes_facturacion: true,
@@ -89,21 +90,22 @@ export const DEFAULT_PERMISSIONS_SISTEMAS: TabPermissionConfig = {
 
 export const DEFAULT_PERMISSIONS_FIRMAS: TabPermissionConfig = {
   empresa: true,
-  noticias: true,
+  noticias: false,
   planes_fichas: true,
   comercial: false,
   arte_visual: false,
   kpier: true,
   mlm: false,
   distribucion_firmas: true,
-  soporte: true,
+  plataforma_prueba: false,
+  soporte: false,
   dashboard: false,
 
   sub_empresa_anf: true,
   sub_empresa_upconta: false,
 
   sub_soporte_upconta: false,
-  sub_soporte_anf: true,
+  sub_soporte_anf: false,
 
   sub_planes_facturacion: false,
   sub_planes_erp: false,
@@ -122,21 +124,22 @@ export const DEFAULT_PERMISSIONS_FIRMAS: TabPermissionConfig = {
 
 export const DEFAULT_PERMISSIONS_TOTAL: TabPermissionConfig = {
   empresa: true,
-  noticias: true,
+  noticias: false,
   planes_fichas: true,
   comercial: true,
   arte_visual: true,
   kpier: true,
   mlm: true,
   distribucion_firmas: true,
-  soporte: true,
+  plataforma_prueba: true,
+  soporte: false,
   dashboard: false,
 
   sub_empresa_anf: true,
   sub_empresa_upconta: true,
 
-  sub_soporte_upconta: true,
-  sub_soporte_anf: true,
+  sub_soporte_upconta: false,
+  sub_soporte_anf: false,
 
   sub_planes_facturacion: true,
   sub_planes_erp: true,
@@ -155,16 +158,16 @@ export const DEFAULT_PERMISSIONS_TOTAL: TabPermissionConfig = {
 
 export const DEFAULT_ROLE_PERMISSIONS: PermissionsMap = {
   admin: {
-    distributorType: "sistemas",
-    permissions: { ...DEFAULT_PERMISSIONS_SISTEMAS },
+    distributorType: "total",
+    permissions: { ...DEFAULT_PERMISSIONS_TOTAL },
   },
   admin1: {
-    distributorType: "sistemas",
-    permissions: { ...DEFAULT_PERMISSIONS_SISTEMAS },
+    distributorType: "total",
+    permissions: { ...DEFAULT_PERMISSIONS_TOTAL },
   },
   admin2: {
-    distributorType: "sistemas",
-    permissions: { ...DEFAULT_PERMISSIONS_SISTEMAS },
+    distributorType: "total",
+    permissions: { ...DEFAULT_PERMISSIONS_TOTAL },
   },
   gerencia: {
     distributorType: "total",
@@ -173,6 +176,8 @@ export const DEFAULT_ROLE_PERMISSIONS: PermissionsMap = {
       dashboard: true,
       noticias: true,
       soporte: true,
+      sub_soporte_upconta: true,
+      sub_soporte_anf: true,
       planes_fichas: false,
       comercial: false,
       kpier: false,

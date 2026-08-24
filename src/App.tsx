@@ -329,7 +329,11 @@ export default function App() {
   };
 
   // Main Tabs State: "noticias", "empresa", "planes_fichas", "comercial", "arte_visual", "plataforma_prueba", "kpier", "mlm", "distribucion_firmas", "soporte", "dashboard", "validacion_accesos"
-  const [mainTab, setMainTab] = useState<"noticias" | "empresa" | "planes_fichas" | "comercial" | "arte_visual" | "plataforma_prueba" | "kpier" | "mlm" | "distribucion_firmas" | "soporte" | "dashboard" | "validacion_accesos">("noticias");
+  const [mainTab, setMainTab] = useState<"noticias" | "empresa" | "planes_fichas" | "comercial" | "arte_visual" | "plataforma_prueba" | "kpier" | "mlm" | "distribucion_firmas" | "soporte" | "dashboard" | "validacion_accesos">(() => {
+    const role = sessionStorage.getItem("godi_user") || "admin1";
+    if (role === "gerencia") return "dashboard";
+    return "empresa";
+  });
 
   // Puntos Acumulados del Socio Activo (sincronizado con ventas, eventos y canjes)
   const [socioPointsBalance, setSocioPointsBalance] = useState<number>(() => calculateActiveSocioPoints());
@@ -371,9 +375,21 @@ export default function App() {
 
   // Permissions enforcement effect according to userRole and dynamic userPerms
   useEffect(() => {
+    const getSocioFallbackTab = (): any => {
+      if (userPerms.empresa !== false) return "empresa";
+      if (userPerms.comercial !== false) return "comercial";
+      if (userPerms.arte_visual !== false) return "arte_visual";
+      if (userPerms.plataforma_prueba !== false) return "plataforma_prueba";
+      if (userPerms.kpier !== false) return "kpier";
+      if (userPerms.distribucion_firmas !== false) return "distribucion_firmas";
+      if (userPerms.mlm !== false) return "mlm";
+      if (userPerms.noticias !== false) return "noticias";
+      return "empresa";
+    };
+
     // Only restrict exclusive Gerencia tabs if not gerencia
     if (userRole !== "gerencia" && ["dashboard", "validacion_accesos"].includes(mainTab)) {
-      setMainTab("noticias");
+      setMainTab(getSocioFallbackTab());
       return;
     }
 
@@ -381,9 +397,10 @@ export default function App() {
     if (userPerms && userPerms[mainTab as keyof TabPermissionConfig] === false) {
       if (userRole === "gerencia") {
         if (userPerms.dashboard !== false) setMainTab("dashboard");
-        else setMainTab("noticias");
+        else if (userPerms.noticias !== false) setMainTab("noticias");
+        else setMainTab("empresa");
       } else {
-        setMainTab("noticias");
+        setMainTab(getSocioFallbackTab());
       }
     }
   }, [userRole, mainTab, permissionsMap, userPerms]);
