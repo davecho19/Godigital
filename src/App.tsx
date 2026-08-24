@@ -379,9 +379,9 @@ export default function App() {
       if (userPerms.empresa !== false) return "empresa";
       if (userPerms.comercial !== false) return "comercial";
       if (userPerms.arte_visual !== false) return "arte_visual";
-      if (userPerms.plataforma_prueba !== false) return "plataforma_prueba";
       if (userPerms.kpier !== false) return "kpier";
       if (userPerms.distribucion_firmas !== false) return "distribucion_firmas";
+      if (userPerms.plataforma_prueba !== false) return "plataforma_prueba";
       if (userPerms.mlm !== false) return "mlm";
       if (userPerms.noticias !== false) return "noticias";
       return "empresa";
@@ -2368,21 +2368,6 @@ export default function App() {
                 </button>
               )}
 
-              {/* Tab 3.5: Plataforma de prueba (pestaña única al lado de comercial) */}
-              {(userPerms.sub_planes_explorador !== false || userPerms.plataforma_prueba !== false) && (
-                <button
-                  onClick={() => setMainTab("plataforma_prueba")}
-                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
-                    mainTab === "plataforma_prueba"
-                      ? "border-indigo-600 text-indigo-700 font-black bg-indigo-50/70 rounded-t-lg"
-                      : "border-transparent text-indigo-700 hover:text-indigo-900 hover:border-indigo-300 font-bold"
-                  }`}
-                >
-                  <Sliders className={`w-4 h-4 ${mainTab === "plataforma_prueba" ? "text-indigo-600" : "text-indigo-500"}`} />
-                  <span className="font-extrabold tracking-wide">Plataforma de prueba</span>
-                </button>
-              )}
-
               {/* Tab 4: Calcula tu comisión */}
               {userPerms.kpier && (
                 <button
@@ -2436,6 +2421,21 @@ export default function App() {
                 >
                   <FileCheck className={`w-4 h-4 ${mainTab === "distribucion_firmas" ? "text-blue-600" : "text-blue-500"}`} />
                   <span className="font-extrabold tracking-wide">Plataforma Connect</span>
+                </button>
+              )}
+
+              {/* Tab 7.5: Plataforma de prueba (ubicada al final después de Plataforma Connect) */}
+              {(userPerms.sub_planes_explorador !== false || userPerms.plataforma_prueba !== false) && (
+                <button
+                  onClick={() => setMainTab("plataforma_prueba")}
+                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
+                    mainTab === "plataforma_prueba"
+                      ? "border-indigo-600 text-indigo-700 font-black bg-indigo-50/70 rounded-t-lg"
+                      : "border-transparent text-indigo-700 hover:text-indigo-900 hover:border-indigo-300 font-bold"
+                  }`}
+                >
+                  <Sliders className={`w-4 h-4 ${mainTab === "plataforma_prueba" ? "text-indigo-600" : "text-indigo-500"}`} />
+                  <span className="font-extrabold tracking-wide">Plataforma de prueba</span>
                 </button>
               )}
 

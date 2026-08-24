@@ -52,7 +52,7 @@ export interface RolePermissions {
 
 export type PermissionsMap = Record<string, RolePermissions>;
 
-const LOCAL_STORAGE_PERMISSIONS_KEY = "kpier_tab_permissions_v5";
+const LOCAL_STORAGE_PERMISSIONS_KEY = "kpier_tab_permissions_v6";
 
 export const DEFAULT_PERMISSIONS_SISTEMAS: TabPermissionConfig = {
   empresa: true,
@@ -129,7 +129,7 @@ export const DEFAULT_PERMISSIONS_TOTAL: TabPermissionConfig = {
   comercial: true,
   arte_visual: true,
   kpier: true,
-  mlm: true,
+  mlm: false,
   distribucion_firmas: true,
   plataforma_prueba: true,
   soporte: false,
