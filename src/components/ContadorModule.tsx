@@ -818,23 +818,6 @@ export function ContadorModule() {
               </button>
             </div>
 
-            {/* Partner Alliance Badge (Only for ILIMITADAS) */}
-            {tipoEmpresaBase === "ilimitadas" && (
-              <div className="bg-gradient-to-br from-emerald-950/90 via-slate-900 to-emerald-950/90 border-2 border-emerald-400/80 p-5 rounded-2xl space-y-2.5 shadow-xl animate-fade-in">
-                <div className="flex items-center gap-2 text-emerald-400 font-extrabold text-sm">
-                  <Award className="w-5 h-5 text-amber-400 shrink-0" />
-                  <span>¡FELICIDADES! SOCIO ESTRATÉGICO</span>
-                </div>
-                <p className="text-xs text-slate-200 leading-relaxed font-medium">
-                  Este plan te convierte en <strong className="text-emerald-300 font-bold">SOCIO ESTRATÉGICO</strong> de UpConta.
-                </p>
-                <div className="text-xs text-slate-300 space-y-1.5 pt-2 border-t border-emerald-800/60">
-                  <p>🔥 Distribuye <strong>Firmas Electrónicas</strong> junto a nuestra certificadora <strong>ANF</strong> con <strong className="text-amber-300">50% DE DESCUENTO</strong>.</p>
-                  <p>💰 Comisiona hasta un <strong className="text-amber-300">30%</strong> por cada plan que refieras.</p>
-                </div>
-              </div>
-            )}
-
             {/* Analysis Box */}
             <div className="bg-slate-900/90 p-4 rounded-2xl border-l-4 border-orange-500 border-r border-t border-b border-slate-800 space-y-1">
               <span className="text-[10px] font-black uppercase text-orange-400 tracking-wider block">

@@ -134,9 +134,11 @@ export default function App() {
     if (role === "admin1" || role === "admin" || role === "socio") return "170622";
     return "";
   });
+  const [isContadorSoloView, setIsContadorSoloView] = useState<boolean>(false);
   const [codeFeedback, setCodeFeedback] = useState<"none" | "success" | "error">("none");
 
   const handleMasterCodeSubmit = (codeToTest?: string) => {
+    setIsContadorSoloView(false);
     const rawCode = (codeToTest !== undefined ? codeToTest : masterCodeInput).trim();
     const codeUpper = rawCode.toUpperCase();
     
@@ -169,6 +171,7 @@ export default function App() {
   };
 
   const handleResetToGuest = () => {
+    setIsContadorSoloView(false);
     setMasterCodeInput("");
     setUserRole("guest");
     setCurrentUserName("Invitado");
@@ -395,6 +398,10 @@ export default function App() {
 
     // Dynamic tab enforcement based on active permissions
     if (userPerms && userPerms[mainTab as keyof TabPermissionConfig] === false) {
+      if (mainTab === "comercial" && activeTab === "contador") {
+        // Acceso directo a contador permitido para cualquiera
+        return;
+      }
       if (userRole === "gerencia") {
         if (userPerms.dashboard !== false) setMainTab("dashboard");
         else if (userPerms.noticias !== false) setMainTab("noticias");
@@ -403,7 +410,7 @@ export default function App() {
         setMainTab(getSocioFallbackTab());
       }
     }
-  }, [userRole, mainTab, permissionsMap, userPerms]);
+  }, [userRole, mainTab, activeTab, permissionsMap, userPerms]);
 
   // Category tab state
   const [tipoPlan, setTipoPlan] = useState<"facturacion" | "erp" | "contador">("facturacion");
@@ -2099,6 +2106,26 @@ export default function App() {
             {/* Right Controls: Master Code Profile Switcher (Gerencia: D180890S / Socio: 170622) */}
             <div className="flex items-center gap-2 shrink-0 flex-wrap justify-center lg:justify-end">
 
+              {/* Botón Contador con acceso directo para cualquiera */}
+              <button
+                id="header-contador-direct-btn"
+                type="button"
+                onClick={() => {
+                  setIsContadorSoloView(true);
+                  setMainTab("comercial");
+                  setActiveTab("contador");
+                }}
+                className={`px-3 py-1.5 rounded-xl font-black text-xs transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer border select-none ${
+                  isContadorSoloView || (mainTab === "comercial" && activeTab === "contador")
+                    ? "bg-[#0B2545] text-white border-blue-950 shadow-xs ring-2 ring-emerald-400"
+                    : "bg-white hover:bg-emerald-50/80 text-slate-800 border-slate-300 hover:border-emerald-500 hover:text-emerald-800"
+                }`}
+                title="Acceso directo a la Calculadora del Plan Contador (Comercial)"
+              >
+                <Calculator className={`w-3.5 h-3.5 ${isContadorSoloView || (mainTab === "comercial" && activeTab === "contador") ? "text-emerald-400" : "text-emerald-600"}`} />
+                <span className="font-extrabold tracking-wide">Contador</span>
+              </button>
+
               {/* QUICK MASTER CODE PROFILE SWITCHER */}
               <div 
                 id="master-profile-switcher-box" 
@@ -2143,7 +2170,7 @@ export default function App() {
                 <div className="relative flex items-center">
                   <input
                     id="master-code-input"
-                    type="text"
+                    type="password"
                     value={masterCodeInput}
                     onChange={(e) => setMasterCodeInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -2152,14 +2179,8 @@ export default function App() {
                         handleMasterCodeSubmit();
                       }
                     }}
-                    placeholder={
-                      userRole === "gerencia" 
-                        ? "D180890S (Gerencia)" 
-                        : userRole === "admin1" || userRole === "socio" || userRole === "admin"
-                        ? "170622 (Socio)" 
-                        : "Código de acceso..."
-                    }
-                    className={`w-32 sm:w-40 px-2.5 py-1 text-xs font-mono font-bold rounded-lg border outline-none transition-all placeholder:text-slate-400 ${
+                    placeholder="••••••"
+                    className={`w-32 sm:w-40 px-2.5 py-1 text-xs font-mono font-bold rounded-lg border outline-none transition-all placeholder:text-slate-400 tracking-wider ${
                       codeFeedback === "error"
                         ? "border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-300"
                         : codeFeedback === "success" || userRole === "gerencia"
@@ -2243,215 +2264,231 @@ export default function App() {
           </div>
 
           {/* ==================== PROFESSIONAL EXECUTIVE NAVBAR (HORIZONTAL SCROLL) ==================== */}
-          {userRole !== "guest" && (
+          {(userRole !== "guest" || isContadorSoloView) && (
             <div className="pt-2 border-t border-slate-200/70 relative flex items-center animate-fade-in">
               <nav
                 ref={navScrollRef}
                 className="flex items-center gap-1 sm:gap-6 overflow-x-auto w-full scrollbar-none scroll-smooth border-b border-slate-200/80 -mb-2 py-0.5"
               >
               
-              {/* Tab 1: Noticias */}
-              {userPerms.noticias !== false && (
-                <button
-                  onClick={() => setMainTab("noticias")}
-                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
-                    mainTab === "noticias"
-                      ? "border-blue-600 text-blue-900 bg-blue-50/80 font-black rounded-t-lg"
-                      : "border-transparent text-slate-700 hover:text-blue-800 hover:bg-blue-50/50 font-bold"
-                  }`}
-                >
-                  <Newspaper className={`w-4 h-4 ${mainTab === "noticias" ? "text-blue-600" : "text-blue-500"}`} />
-                  <span>Noticias</span>
-                  <span className="px-1.5 py-0.2 bg-blue-600 text-white font-extrabold text-[9px] rounded-full uppercase tracking-wider animate-pulse">
-                    Novedades
-                  </span>
-                </button>
-              )}
-
-              {/* Tab 0: Socio Estratégico */}
-              {userPerms.empresa !== false && (
-                <button
-                  onClick={() => setMainTab("empresa")}
-                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
-                    mainTab === "empresa"
-                      ? "border-[#0B2545] text-[#0B2545] font-black bg-slate-100/80 rounded-t-lg"
-                      : "border-transparent text-slate-700 hover:text-slate-900 hover:bg-slate-100/50 font-bold"
-                  }`}
-                >
-                  <Building2 className={`w-4 h-4 ${mainTab === "empresa" ? "text-[#0B2545]" : "text-slate-600"}`} />
-                  <span>Socio Estratégico</span>
-                </button>
-              )}
-
-              {/* Tab Dashboard (Gerencia) */}
-              {(userRole === "gerencia" || userPerms.dashboard) && userPerms.dashboard !== false && (
-                <button
-                  onClick={() => setMainTab("dashboard")}
-                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
-                    mainTab === "dashboard"
-                      ? "border-[#3B51A3] text-[#3B51A3] font-extrabold"
-                      : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300 font-medium"
-                  }`}
-                >
-                  <LayoutDashboard className={`w-4 h-4 ${mainTab === "dashboard" ? "text-[#3B51A3]" : "text-amber-500"}`} />
-                  <span>Dashboard</span>
-                </button>
-              )}
-
-              {/* Tab Tabla de Validación de Accesos (EXCLUSIVO GERENCIA) */}
-              {userRole === "gerencia" && (
-                <button
-                  onClick={() => setMainTab("validacion_accesos")}
-                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
-                    mainTab === "validacion_accesos"
-                      ? "border-[#3B51A3] text-[#3B51A3] font-extrabold"
-                      : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300 font-medium"
-                  }`}
-                >
-                  <ShieldCheck className={`w-4 h-4 ${mainTab === "validacion_accesos" ? "text-[#3B51A3]" : "text-amber-500"}`} />
-                  <span>Validación Accesos</span>
-                </button>
-              )}
-
-              {/* Tab 2: Planes y Fichas (Solo visible para Gerencia o admin) */}
-              {userRole === "gerencia" && userPerms.planes_fichas && (
-                <button
-                  onClick={() => {
-                    setMainTab("planes_fichas");
-                    if (!["plan", "firmas", "explorador"].includes(activeTab)) {
-                      setActiveTab("plan");
-                    }
-                  }}
-                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
-                    mainTab === "planes_fichas"
-                      ? "border-[#3B51A3] text-[#3B51A3] font-extrabold"
-                      : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300 font-medium"
-                  }`}
-                >
-                  <Layers className={`w-4 h-4 ${mainTab === "planes_fichas" ? "text-[#3B51A3]" : "text-slate-400"}`} />
-                  <span>Planes y Fichas</span>
-                </button>
-              )}
-
-              {/* Tab 3: COMERCIAL */}
-              {userPerms.comercial && (
+              {isContadorSoloView ? (
+                /* Tab COMERCIAL (Única pestaña visible al ingresar por el botón Contador) */
                 <button
                   onClick={() => {
                     setMainTab("comercial");
-                    if (!["simulador", "plan", "firmas", "contador"].includes(activeTab)) {
-                      setActiveTab("simulador");
-                    }
+                    setActiveTab("contador");
                   }}
-                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
-                    mainTab === "comercial"
-                      ? "border-purple-600 text-purple-600 font-black bg-purple-50/70 rounded-t-lg"
-                      : "border-transparent text-purple-600 hover:text-purple-700 hover:border-purple-300 font-bold"
-                  }`}
+                  className="pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative border-purple-600 text-purple-600 font-black bg-purple-50/70 rounded-t-lg"
                 >
-                  <Briefcase className={`w-4 h-4 ${mainTab === "comercial" ? "text-purple-600" : "text-purple-500"}`} />
+                  <Briefcase className="w-4 h-4 text-purple-600" />
                   <span className="font-extrabold tracking-wide">COMERCIAL</span>
                 </button>
-              )}
+              ) : (
+                <>
+                  {/* Tab 1: Noticias */}
+                  {userPerms.noticias !== false && (
+                    <button
+                      onClick={() => setMainTab("noticias")}
+                      className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
+                        mainTab === "noticias"
+                          ? "border-blue-600 text-blue-900 bg-blue-50/80 font-black rounded-t-lg"
+                          : "border-transparent text-slate-700 hover:text-blue-800 hover:bg-blue-50/50 font-bold"
+                      }`}
+                    >
+                      <Newspaper className={`w-4 h-4 ${mainTab === "noticias" ? "text-blue-600" : "text-blue-500"}`} />
+                      <span>Noticias</span>
+                      <span className="px-1.5 py-0.2 bg-blue-600 text-white font-extrabold text-[9px] rounded-full uppercase tracking-wider animate-pulse">
+                        Novedades
+                      </span>
+                    </button>
+                  )}
 
-              {/* Tab 3.2: Arte Visual (Principal al lado de COMERCIAL) */}
-              {(userPerms.arte_visual !== false && userPerms.sub_comercial_arte_visual !== false) && (
-                <button
-                  onClick={() => setMainTab("arte_visual")}
-                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
-                    mainTab === "arte_visual"
-                      ? "border-pink-600 text-pink-600 font-black bg-pink-50/70 rounded-t-lg"
-                      : "border-transparent text-pink-600 hover:text-pink-700 hover:border-pink-300 font-bold"
-                  }`}
-                >
-                  <Sparkles className={`w-4 h-4 ${mainTab === "arte_visual" ? "text-pink-600" : "text-pink-500"}`} />
-                  <span className="font-extrabold tracking-wide">Arte Visual</span>
-                </button>
-              )}
+                  {/* Tab 0: Socio Estratégico */}
+                  {userPerms.empresa !== false && (
+                    <button
+                      onClick={() => setMainTab("empresa")}
+                      className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
+                        mainTab === "empresa"
+                          ? "border-[#0B2545] text-[#0B2545] font-black bg-slate-100/80 rounded-t-lg"
+                          : "border-transparent text-slate-700 hover:text-slate-900 hover:bg-slate-100/50 font-bold"
+                      }`}
+                    >
+                      <Building2 className={`w-4 h-4 ${mainTab === "empresa" ? "text-[#0B2545]" : "text-slate-600"}`} />
+                      <span>Socio Estratégico</span>
+                    </button>
+                  )}
 
-              {/* Tab 4: Calcula tu comisión */}
-              {userPerms.kpier && (
-                <button
-                  onClick={() => {
-                    setMainTab("kpier");
-                    if (kpierTab === "comisiones" || kpierTab === "comisiones_sistema") {
-                      if (userPerms.sub_kpier_comisiones_sistema === false) {
-                        if (userPerms.sub_kpier_comisiones_firmas !== false) setKpierTab("comisiones_firmas");
-                      } else {
-                        setKpierTab("comisiones_sistema");
-                      }
-                    } else if (kpierTab === "comisiones_firmas" && userPerms.sub_kpier_comisiones_firmas === false) {
-                      if (userPerms.sub_kpier_comisiones_sistema !== false) setKpierTab("comisiones_sistema");
-                    }
-                  }}
-                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
-                    mainTab === "kpier"
-                      ? "border-emerald-600 text-emerald-600 font-black bg-emerald-50/70 rounded-t-lg"
-                      : "border-transparent text-emerald-600 hover:text-emerald-700 hover:border-emerald-300 font-bold"
-                  }`}
-                >
-                  <Calculator className={`w-4 h-4 ${mainTab === "kpier" ? "text-emerald-600" : "text-emerald-500"}`} />
-                  <span className="font-extrabold tracking-wide">Calcula tu comisión</span>
-                </button>
-              )}
+                  {/* Tab Dashboard (Gerencia) */}
+                  {(userRole === "gerencia" || userPerms.dashboard) && userPerms.dashboard !== false && (
+                    <button
+                      onClick={() => setMainTab("dashboard")}
+                      className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
+                        mainTab === "dashboard"
+                          ? "border-[#3B51A3] text-[#3B51A3] font-extrabold"
+                          : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300 font-medium"
+                      }`}
+                    >
+                      <LayoutDashboard className={`w-4 h-4 ${mainTab === "dashboard" ? "text-[#3B51A3]" : "text-amber-500"}`} />
+                      <span>Dashboard</span>
+                    </button>
+                  )}
 
-              {/* Tab 6: MLM */}
-              {userPerms.mlm && (
-                <button
-                  onClick={() => setMainTab("mlm")}
-                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
-                    mainTab === "mlm"
-                      ? "border-orange-500 text-orange-600 font-black bg-orange-50/70 rounded-t-lg"
-                      : "border-transparent text-orange-500 hover:text-orange-600 hover:border-orange-300 font-bold"
-                  }`}
-                >
-                  <Globe className={`w-4 h-4 ${mainTab === "mlm" ? "text-orange-600" : "text-orange-500"}`} />
-                  <span className="font-extrabold tracking-wide">MLM</span>
-                </button>
-              )}
+                  {/* Tab Tabla de Validación de Accesos (EXCLUSIVO GERENCIA) */}
+                  {userRole === "gerencia" && (
+                    <button
+                      onClick={() => setMainTab("validacion_accesos")}
+                      className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
+                        mainTab === "validacion_accesos"
+                          ? "border-[#3B51A3] text-[#3B51A3] font-extrabold"
+                          : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300 font-medium"
+                      }`}
+                    >
+                      <ShieldCheck className={`w-4 h-4 ${mainTab === "validacion_accesos" ? "text-[#3B51A3]" : "text-amber-500"}`} />
+                      <span>Validación Accesos</span>
+                    </button>
+                  )}
 
-              {/* Tab 7: Plataforma Connect */}
-              {userPerms.distribucion_firmas && (
-                <button
-                  onClick={() => setMainTab("distribucion_firmas")}
-                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
-                    mainTab === "distribucion_firmas"
-                      ? "border-blue-600 text-blue-600 font-black bg-blue-50/70 rounded-t-lg"
-                      : "border-transparent text-blue-600 hover:text-blue-700 hover:border-blue-300 font-bold"
-                  }`}
-                >
-                  <FileCheck className={`w-4 h-4 ${mainTab === "distribucion_firmas" ? "text-blue-600" : "text-blue-500"}`} />
-                  <span className="font-extrabold tracking-wide">Plataforma Connect</span>
-                </button>
-              )}
+                  {/* Tab 2: Planes y Fichas (Solo visible para Gerencia o admin) */}
+                  {userRole === "gerencia" && userPerms.planes_fichas && (
+                    <button
+                      onClick={() => {
+                        setMainTab("planes_fichas");
+                        if (!["plan", "firmas", "explorador"].includes(activeTab)) {
+                          setActiveTab("plan");
+                        }
+                      }}
+                      className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
+                        mainTab === "planes_fichas"
+                          ? "border-[#3B51A3] text-[#3B51A3] font-extrabold"
+                          : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300 font-medium"
+                      }`}
+                    >
+                      <Layers className={`w-4 h-4 ${mainTab === "planes_fichas" ? "text-[#3B51A3]" : "text-slate-400"}`} />
+                      <span>Planes y Fichas</span>
+                    </button>
+                  )}
 
-              {/* Tab 7.5: Plataforma de prueba (ubicada al final después de Plataforma Connect) */}
-              {(userPerms.sub_planes_explorador !== false || userPerms.plataforma_prueba !== false) && (
-                <button
-                  onClick={() => setMainTab("plataforma_prueba")}
-                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
-                    mainTab === "plataforma_prueba"
-                      ? "border-indigo-600 text-indigo-700 font-black bg-indigo-50/70 rounded-t-lg"
-                      : "border-transparent text-indigo-700 hover:text-indigo-900 hover:border-indigo-300 font-bold"
-                  }`}
-                >
-                  <Sliders className={`w-4 h-4 ${mainTab === "plataforma_prueba" ? "text-indigo-600" : "text-indigo-500"}`} />
-                  <span className="font-extrabold tracking-wide">Plataforma de prueba</span>
-                </button>
-              )}
+                  {/* Tab 3: COMERCIAL */}
+                  {userPerms.comercial && (
+                    <button
+                      onClick={() => {
+                        setMainTab("comercial");
+                        if (!["simulador", "plan", "firmas", "contador"].includes(activeTab)) {
+                          setActiveTab("simulador");
+                        }
+                      }}
+                      className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
+                        mainTab === "comercial"
+                          ? "border-purple-600 text-purple-600 font-black bg-purple-50/70 rounded-t-lg"
+                          : "border-transparent text-purple-600 hover:text-purple-700 hover:border-purple-300 font-bold"
+                      }`}
+                    >
+                      <Briefcase className={`w-4 h-4 ${mainTab === "comercial" ? "text-purple-600" : "text-purple-500"}`} />
+                      <span className="font-extrabold tracking-wide">COMERCIAL</span>
+                    </button>
+                  )}
 
-              {/* Tab 8: Soporte */}
-              {userPerms.soporte !== false && (
-                <button
-                  onClick={() => setMainTab("soporte")}
-                  className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
-                    mainTab === "soporte"
-                      ? "border-[#3B51A3] text-[#3B51A3] font-extrabold"
-                      : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300 font-medium"
-                  }`}
-                >
-                  <Headphones className={`w-4 h-4 ${mainTab === "soporte" ? "text-[#3B51A3]" : "text-slate-400"}`} />
-                  <span>Soporte</span>
-                </button>
+                  {/* Tab 3.2: Arte Visual (Principal al lado de COMERCIAL) */}
+                  {(userPerms.arte_visual !== false && userPerms.sub_comercial_arte_visual !== false) && (
+                    <button
+                      onClick={() => setMainTab("arte_visual")}
+                      className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
+                        mainTab === "arte_visual"
+                          ? "border-pink-600 text-pink-600 font-black bg-pink-50/70 rounded-t-lg"
+                          : "border-transparent text-pink-600 hover:text-pink-700 hover:border-pink-300 font-bold"
+                      }`}
+                    >
+                      <Sparkles className={`w-4 h-4 ${mainTab === "arte_visual" ? "text-pink-600" : "text-pink-500"}`} />
+                      <span className="font-extrabold tracking-wide">Arte Visual</span>
+                    </button>
+                  )}
+
+                  {/* Tab 4: Calcula tu comisión */}
+                  {userPerms.kpier && (
+                    <button
+                      onClick={() => {
+                        setMainTab("kpier");
+                        if (kpierTab === "comisiones" || kpierTab === "comisiones_sistema") {
+                          if (userPerms.sub_kpier_comisiones_sistema === false) {
+                            if (userPerms.sub_kpier_comisiones_firmas !== false) setKpierTab("comisiones_firmas");
+                          } else {
+                            setKpierTab("comisiones_sistema");
+                          }
+                        } else if (kpierTab === "comisiones_firmas" && userPerms.sub_kpier_comisiones_firmas === false) {
+                          if (userPerms.sub_kpier_comisiones_sistema !== false) setKpierTab("comisiones_sistema");
+                        }
+                      }}
+                      className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
+                        mainTab === "kpier"
+                          ? "border-emerald-600 text-emerald-600 font-black bg-emerald-50/70 rounded-t-lg"
+                          : "border-transparent text-emerald-600 hover:text-emerald-700 hover:border-emerald-300 font-bold"
+                      }`}
+                    >
+                      <Calculator className={`w-4 h-4 ${mainTab === "kpier" ? "text-emerald-600" : "text-emerald-500"}`} />
+                      <span className="font-extrabold tracking-wide">Calcula tu comisión</span>
+                    </button>
+                  )}
+
+                  {/* Tab 6: MLM */}
+                  {userPerms.mlm && (
+                    <button
+                      onClick={() => setMainTab("mlm")}
+                      className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
+                        mainTab === "mlm"
+                          ? "border-orange-500 text-orange-600 font-black bg-orange-50/70 rounded-t-lg"
+                          : "border-transparent text-orange-500 hover:text-orange-600 hover:border-orange-300 font-bold"
+                      }`}
+                    >
+                      <Globe className={`w-4 h-4 ${mainTab === "mlm" ? "text-orange-600" : "text-orange-500"}`} />
+                      <span className="font-extrabold tracking-wide">MLM</span>
+                    </button>
+                  )}
+
+                  {/* Tab 7: Plataforma Connect */}
+                  {userPerms.distribucion_firmas && (
+                    <button
+                      onClick={() => setMainTab("distribucion_firmas")}
+                      className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
+                        mainTab === "distribucion_firmas"
+                          ? "border-blue-600 text-blue-600 font-black bg-blue-50/70 rounded-t-lg"
+                          : "border-transparent text-blue-600 hover:text-blue-700 hover:border-blue-300 font-bold"
+                      }`}
+                    >
+                      <FileCheck className={`w-4 h-4 ${mainTab === "distribucion_firmas" ? "text-blue-600" : "text-blue-500"}`} />
+                      <span className="font-extrabold tracking-wide">Plataforma Connect</span>
+                    </button>
+                  )}
+
+                  {/* Tab 7.5: Plataforma de prueba (ubicada al final después de Plataforma Connect) */}
+                  {(userPerms.sub_planes_explorador !== false || userPerms.plataforma_prueba !== false) && (
+                    <button
+                      onClick={() => setMainTab("plataforma_prueba")}
+                      className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
+                        mainTab === "plataforma_prueba"
+                          ? "border-indigo-600 text-indigo-700 font-black bg-indigo-50/70 rounded-t-lg"
+                          : "border-transparent text-indigo-700 hover:text-indigo-900 hover:border-indigo-300 font-bold"
+                      }`}
+                    >
+                      <Sliders className={`w-4 h-4 ${mainTab === "plataforma_prueba" ? "text-indigo-600" : "text-indigo-500"}`} />
+                      <span className="font-extrabold tracking-wide">Plataforma de prueba</span>
+                    </button>
+                  )}
+
+                  {/* Tab 8: Soporte */}
+                  {userPerms.soporte !== false && (
+                    <button
+                      onClick={() => setMainTab("soporte")}
+                      className={`pb-2.5 pt-1 px-3 text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 border-b-2 relative ${
+                        mainTab === "soporte"
+                          ? "border-[#3B51A3] text-[#3B51A3] font-extrabold"
+                          : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300 font-medium"
+                      }`}
+                    >
+                      <Headphones className={`w-4 h-4 ${mainTab === "soporte" ? "text-[#3B51A3]" : "text-slate-400"}`} />
+                      <span>Soporte</span>
+                    </button>
+                  )}
+                </>
               )}
 
             </nav>
@@ -2459,7 +2496,7 @@ export default function App() {
           )}
 
           {/* Sub-Navigation Pills (Shown inside Planes y Fichas / Comercial / KPier) */}
-          {mainTab === "planes_fichas" && (
+          {mainTab === "planes_fichas" && !isContadorSoloView && (
             <div className="flex items-center justify-center gap-2 bg-amber-50/80 p-1.5 rounded-xl border border-amber-200/80 animate-fade-in w-full max-w-xl mx-auto my-1">
               <button
                 onClick={() => { setMainTab("planes_fichas"); setActiveTab("plan"); }}
@@ -2492,35 +2529,39 @@ export default function App() {
 
           {mainTab === "comercial" && (
             <div className="flex items-center justify-center gap-2 bg-purple-50/80 p-1.5 rounded-xl border border-purple-200/80 animate-fade-in w-full max-w-4xl mx-auto my-1 overflow-x-auto scrollbar-none">
-              {/* 1. Sistemas */}
-              <button
-                onClick={() => { setMainTab("comercial"); setActiveTab("plan"); }}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
-                  activeTab === "plan" ? "bg-[#0B2545] text-white shadow-xs" : "text-slate-700 hover:bg-purple-100/80"
-                }`}
-              >
-                Sistemas
-              </button>
+              {!isContadorSoloView && (
+                <>
+                  {/* 1. Sistemas */}
+                  <button
+                    onClick={() => { setMainTab("comercial"); setActiveTab("plan"); }}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
+                      activeTab === "plan" ? "bg-[#0B2545] text-white shadow-xs" : "text-slate-700 hover:bg-purple-100/80"
+                    }`}
+                  >
+                    Sistemas
+                  </button>
 
-              {/* 2. Firmas */}
-              <button
-                onClick={() => { setMainTab("comercial"); setActiveTab("firmas"); }}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
-                  activeTab === "firmas" ? "bg-[#0B2545] text-white shadow-xs" : "text-slate-700 hover:bg-purple-100/80"
-                }`}
-              >
-                Firmas
-              </button>
+                  {/* 2. Firmas */}
+                  <button
+                    onClick={() => { setMainTab("comercial"); setActiveTab("firmas"); }}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
+                      activeTab === "firmas" ? "bg-[#0B2545] text-white shadow-xs" : "text-slate-700 hover:bg-purple-100/80"
+                    }`}
+                  >
+                    Firmas
+                  </button>
 
-              {/* 3. Cotizador */}
-              <button
-                onClick={() => { setMainTab("comercial"); setActiveTab("simulador"); }}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
-                  activeTab === "simulador" ? "bg-[#0B2545] text-white shadow-xs" : "text-slate-700 hover:bg-purple-100/80"
-                }`}
-              >
-                Cotizador
-              </button>
+                  {/* 3. Cotizador */}
+                  <button
+                    onClick={() => { setMainTab("comercial"); setActiveTab("simulador"); }}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
+                      activeTab === "simulador" ? "bg-[#0B2545] text-white shadow-xs" : "text-slate-700 hover:bg-purple-100/80"
+                    }`}
+                  >
+                    Cotizador
+                  </button>
+                </>
+              )}
 
               {/* 5. Contador */}
               <button
@@ -2572,12 +2613,14 @@ export default function App() {
       }`}>
         
         {/* ==================================== PANTALLA PRINCIPAL DE BIENVENIDA (GUEST) ==================================== */}
-        {userRole === "guest" && (
+        {userRole === "guest" && !isContadorSoloView && (
           <WelcomeScreen onUnlock={handleMasterCodeSubmit} codeFeedback={codeFeedback} />
         )}
 
-        {/* ==================================== PESTAÑAS Y MÓDULOS ACTIVOS (SOCIO / GERENCIA) ==================================== */}
-        {userRole !== "guest" && (
+        {/* ==================================== PESTAÑAS Y MÓDULOS ACTIVOS (SOCIO / GERENCIA / CONTADOR SOLO VIEW) ==================================== */}
+        {isContadorSoloView ? (
+          <ContadorModule />
+        ) : userRole !== "guest" ? (
           <>
             {/* ==================================== TAB EMPRESA ==================================== */}
             {mainTab === "empresa" && userPerms.empresa !== false && <NewsModule userRole={userRole} initialSubTab="empresa" userPerms={userPerms} />}
@@ -5203,7 +5246,7 @@ export default function App() {
         {activeTab === "dashboard" && <DashboardModule />}
 
           </>
-        )}
+        ) : null}
 
       </main>
 
