@@ -65,7 +65,8 @@ import {
   Loader2,
   Eye,
   EyeOff,
-  X
+  X,
+  ZoomIn
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { generateProcessManualPDF } from "./utils/generateProcessManualPDF";
@@ -556,6 +557,51 @@ export default function App() {
   const [copiedUpContaBankText, setCopiedUpContaBankText] = useState<boolean>(false);
   const [copiedUpContaBankImage, setCopiedUpContaBankImage] = useState<boolean>(false);
   const [copiedPitch, setCopiedPitch] = useState<boolean>(false);
+  const [copiedReqImage, setCopiedReqImage] = useState<boolean>(false);
+
+  const handleDownloadRequisitoImage = async () => {
+    const fileUrl = "/artes/requisito%20firma.png";
+    try {
+      const res = await fetch(fileUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = "requisito firma.png";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch {
+      window.open(fileUrl, "_blank");
+    }
+  };
+
+  const handleCopyRequisitoImage = async () => {
+    const fileUrl = "/artes/requisito%20firma.png";
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      if (blob && navigator.clipboard && typeof (window as any).ClipboardItem !== "undefined") {
+        await navigator.clipboard.write([
+          new (window as any).ClipboardItem({ [blob.type || "image/png"]: blob })
+        ]);
+        setCopiedReqImage(true);
+        setTimeout(() => setCopiedReqImage(false), 2500);
+        return;
+      }
+      throw new Error("ClipboardItem not supported");
+    } catch {
+      const fullUrl = `${window.location.origin}${fileUrl}`;
+      try {
+        await navigator.clipboard.writeText(fullUrl);
+        setCopiedReqImage(true);
+        setTimeout(() => setCopiedReqImage(false), 2500);
+      } catch (err) {
+        console.error("Failed to copy image URL to clipboard", err);
+      }
+    }
+  };
 
   const handleCopyRequirements = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -2783,50 +2829,68 @@ export default function App() {
           )}
 
           {mainTab === "comercial" && (
-            <div className="flex items-center justify-center gap-2 bg-purple-50/80 p-1.5 rounded-xl border border-purple-200/80 animate-fade-in w-full max-w-4xl mx-auto my-1 overflow-x-auto scrollbar-none">
-              {!isContadorSoloView && (
-                <>
-                  {/* 1. Sistemas */}
-                  <button
-                    onClick={() => { setMainTab("comercial"); setActiveTab("plan"); }}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
-                      activeTab === "plan" ? "bg-[#0B2545] text-white shadow-xs" : "text-slate-700 hover:bg-purple-100/80"
-                    }`}
-                  >
-                    Sistemas
-                  </button>
+            <div className="bg-white border border-slate-200 rounded-2xl p-2 sm:p-2.5 shadow-2xs w-full max-w-4xl mx-auto my-1 animate-fade-in">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {!isContadorSoloView && (
+                  <>
+                    {/* 1. Sistemas */}
+                    <button
+                      type="button"
+                      onClick={() => { setMainTab("comercial"); setActiveTab("plan"); }}
+                      className={`py-2.5 px-3.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        activeTab === "plan"
+                          ? "bg-[#0B2545] text-white shadow-xs"
+                          : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/70"
+                      }`}
+                    >
+                      <Layers className={`w-4 h-4 ${activeTab === "plan" ? "text-amber-400" : "text-[#0B2545]"}`} />
+                      <span>Sistemas</span>
+                    </button>
 
-                  {/* 2. Firmas */}
-                  <button
-                    onClick={() => { setMainTab("comercial"); setActiveTab("firmas"); }}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
-                      activeTab === "firmas" ? "bg-[#0B2545] text-white shadow-xs" : "text-slate-700 hover:bg-purple-100/80"
-                    }`}
-                  >
-                    Firmas
-                  </button>
+                    {/* 2. Firmas */}
+                    <button
+                      type="button"
+                      onClick={() => { setMainTab("comercial"); setActiveTab("firmas"); }}
+                      className={`py-2.5 px-3.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        activeTab === "firmas"
+                          ? "bg-[#0B2545] text-white shadow-xs"
+                          : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/70"
+                      }`}
+                    >
+                      <FileCheck className={`w-4 h-4 ${activeTab === "firmas" ? "text-amber-400" : "text-[#0B2545]"}`} />
+                      <span>Firmas</span>
+                    </button>
 
-                  {/* 3. Cotizador */}
-                  <button
-                    onClick={() => { setMainTab("comercial"); setActiveTab("simulador"); }}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
-                      activeTab === "simulador" ? "bg-[#0B2545] text-white shadow-xs" : "text-slate-700 hover:bg-purple-100/80"
-                    }`}
-                  >
-                    Cotizador
-                  </button>
-                </>
-              )}
+                    {/* 3. Cotizador */}
+                    <button
+                      type="button"
+                      onClick={() => { setMainTab("comercial"); setActiveTab("simulador"); }}
+                      className={`py-2.5 px-3.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        activeTab === "simulador"
+                          ? "bg-[#0B2545] text-white shadow-xs"
+                          : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/70"
+                      }`}
+                    >
+                      <Calculator className={`w-4 h-4 ${activeTab === "simulador" ? "text-amber-400" : "text-[#0B2545]"}`} />
+                      <span>Cotizador</span>
+                    </button>
+                  </>
+                )}
 
-              {/* 5. Contador */}
-              <button
-                onClick={() => { setMainTab("comercial"); setActiveTab("contador"); }}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
-                  activeTab === "contador" ? "bg-[#0B2545] text-white shadow-xs" : "text-slate-700 hover:bg-purple-100/80"
-                }`}
-              >
-                Contador
-              </button>
+                {/* 4. Contador */}
+                <button
+                  type="button"
+                  onClick={() => { setMainTab("comercial"); setActiveTab("contador"); }}
+                  className={`py-2.5 px-3.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    activeTab === "contador"
+                      ? "bg-[#0B2545] text-white shadow-xs"
+                      : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/70"
+                  }`}
+                >
+                  <Users className={`w-4 h-4 ${activeTab === "contador" ? "text-amber-400" : "text-[#0B2545]"}`} />
+                  <span>Contador</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -3074,144 +3138,6 @@ export default function App() {
             {/* PLANES UI (Facturación, ERP, Contador) */}
             {tipoPlan !== "brochures" && (
               <>
-
-        {/* 3 Artes Oficiales para Planes ERP (En la misma línea horizontal) */}
-        {tipoPlan === "erp" && (
-          <div className="mt-6 mb-2">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-              {ARTES_ERP.map((item) => {
-                const fileUrl = `/artes/${encodeURIComponent(item.filename)}`;
-                return (
-                  <div
-                    key={item.id}
-                    className="p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs hover:shadow-sm transition-all flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        onClick={() => setPreviewArteModal({ planName: item.nombre, filename: item.filename })}
-                        className="w-14 h-18 rounded-xl overflow-hidden border border-amber-300 shadow-2xs bg-slate-100 shrink-0 relative group cursor-pointer"
-                        title="Haz clic para previsualizar con zoom"
-                      >
-                        <img
-                          src={fileUrl}
-                          alt={item.nombre}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                        />
-                        <div className="absolute inset-0 bg-slate-950/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                          <Eye className="w-4 h-4 text-white drop-shadow" />
-                        </div>
-                      </div>
-                      <div className="min-w-0">
-                        <span className="text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded shadow-2xs">
-                          Arte Oficial ERP
-                        </span>
-                        <h4 className="text-xs sm:text-sm font-black text-slate-900 truncate mt-1">
-                          {item.nombre}
-                        </h4>
-                        <p className="text-[10px] text-slate-500 truncate hidden sm:block">
-                          {item.desc}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const response = await fetch(fileUrl);
-                          const blob = await response.blob();
-                          const blobUrl = URL.createObjectURL(blob);
-                          const a = document.createElement("a");
-                          a.href = blobUrl;
-                          a.download = item.filename;
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-                        } catch {
-                          window.open(fileUrl, "_blank");
-                        }
-                      }}
-                      className="p-2 sm:px-3 sm:py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-2xs hover:shadow transition-all cursor-pointer shrink-0 active:scale-95"
-                      title={`Descargar ${item.filename}`}
-                    >
-                      <Download className="w-3.5 h-3.5 text-slate-950" />
-                      <span className="hidden sm:inline">Descargar</span>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* 4 Artes Oficiales para Plan Contadores (En la misma línea horizontal) */}
-        {tipoPlan === "contador" && (
-          <div className="mt-6 mb-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-              {ARTES_CONTADOR.map((item) => {
-                const fileUrl = `/artes/${encodeURIComponent(item.filename)}`;
-                return (
-                  <div
-                    key={item.id}
-                    className="p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs hover:shadow-sm transition-all flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        onClick={() => setPreviewArteModal({ planName: item.nombre, filename: item.filename })}
-                        className="w-14 h-18 rounded-xl overflow-hidden border border-amber-300 shadow-2xs bg-slate-100 shrink-0 relative group cursor-pointer"
-                        title="Haz clic para previsualizar"
-                      >
-                        <img
-                          src={fileUrl}
-                          alt={item.nombre}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                        />
-                        <div className="absolute inset-0 bg-slate-950/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                          <Eye className="w-4 h-4 text-white drop-shadow" />
-                        </div>
-                      </div>
-                      <div className="min-w-0">
-                        <span className="text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded shadow-2xs">
-                          Arte Oficial
-                        </span>
-                        <h4 className="text-xs sm:text-sm font-black text-slate-900 truncate mt-1">
-                          {item.nombre}
-                        </h4>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const response = await fetch(fileUrl);
-                          const blob = await response.blob();
-                          const blobUrl = URL.createObjectURL(blob);
-                          const a = document.createElement("a");
-                          a.href = blobUrl;
-                          a.download = item.filename;
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-                        } catch {
-                          window.open(fileUrl, "_blank");
-                        }
-                      }}
-                      className="p-2 sm:px-3 sm:py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-2xs hover:shadow transition-all cursor-pointer shrink-0 active:scale-95"
-                      title={`Descargar ${item.filename}`}
-                    >
-                      <Download className="w-3.5 h-3.5 text-slate-950" />
-                      <span className="hidden sm:inline">Descargar</span>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Catalog & Explorer Split View */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
@@ -3746,44 +3672,52 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Categoría de Plan
-                    </label>
-                    <select
-                      value={tipoPlan}
-                      onChange={(e) => {
-                        const newCat = e.target.value as "facturacion" | "erp" | "contador";
-                        setTipoPlan(newCat);
-                        setSelectedPlanName("");
-                      }}
-                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 font-bold focus:outline-none focus:border-[#0B2545] cursor-pointer shadow-sm h-9"
-                    >
-                      <option value="facturacion">Facturación</option>
-                      <option value="erp">ERP</option>
-                      <option value="contador">Contadores</option>
-                    </select>
-                  </div>
+                  {(() => {
+                    const safeCategoria = (tipoPlan in PLANES_DATA ? tipoPlan : "facturacion") as "facturacion" | "erp" | "contador";
+                    const availablePlans = PLANES_DATA[safeCategoria] || [];
+                    return (
+                      <>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                            Categoría de Plan
+                          </label>
+                          <select
+                            value={safeCategoria}
+                            onChange={(e) => {
+                              const newCat = e.target.value as "facturacion" | "erp" | "contador";
+                              setTipoPlan(newCat);
+                              setSelectedPlanName("");
+                            }}
+                            className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 font-bold focus:outline-none focus:border-[#0B2545] cursor-pointer shadow-sm h-9"
+                          >
+                            <option value="facturacion">Facturación</option>
+                            <option value="erp">ERP</option>
+                            <option value="contador">Contadores</option>
+                          </select>
+                        </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Plan Seleccionado
-                    </label>
-                    <select
-                      value={selectedPlanName}
-                      onChange={(e) => {
-                        setSelectedPlanName(e.target.value);
-                      }}
-                      className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 font-bold focus:outline-none focus:border-[#0B2545] cursor-pointer shadow-sm h-9"
-                    >
-                      <option value="">-- Sin Plan Base (Ninguno) --</option>
-                      {PLANES_DATA[tipoPlan].map((p) => (
-                        <option key={p.nombre} value={p.nombre}>
-                          {p.nombre}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                            Plan Seleccionado
+                          </label>
+                          <select
+                            value={selectedPlanName}
+                            onChange={(e) => {
+                              setSelectedPlanName(e.target.value);
+                            }}
+                            className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 font-bold focus:outline-none focus:border-[#0B2545] cursor-pointer shadow-sm h-9"
+                          >
+                            <option value="">-- Sin Plan Base (Ninguno) --</option>
+                            {availablePlans.map((p) => (
+                              <option key={p.nombre} value={p.nombre}>
+                                {p.nombre}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
+                    );
+                  })()}
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
@@ -4652,481 +4586,56 @@ export default function App() {
         {/* ==================================== TABS: FIRMAS ELECTRÓNICAS VIGENTES ==================================== */}
         {(mainTab === "planes_fichas" || mainTab === "comercial") && activeTab === "firmas" && (
           <div className="space-y-6 animate-fade-in">
-            {/* Step 1: Select Type of Signature (4 Category Selector Cards) */}
-            <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
-                <div>
-                  <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                    <FileCheck className="w-5 h-5 text-amber-500" />
-                    <span>1. Elije 1: Selecciona el Tipo de Firma Electrónica</span>
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Selecciona la modalidad acorde al perfil fiscal y tributario de tu cliente.
-                  </p>
-                </div>
-                <span className="text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1 rounded-full">
-                  Emisión Inmediata ANF AC
-                </span>
-              </div>
-
-              {/* 3 Category Selector Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-3">
-                {/* 1. Persona Natural */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFirmaTypeSelect("PERSONA NATURAL");
-                    if (!FIRMAS_DATA.some(f => f.tipo === "PERSONA NATURAL" && selectedVigencias.includes(f.vigencia))) {
-                      setSelectedVigencias(["1 AÑO"]);
-                    }
-                  }}
-                  className={`p-4 rounded-xl border text-left transition-all cursor-pointer relative ${
-                    firmaTypeSelect === "PERSONA NATURAL"
-                      ? "bg-blue-50/90 border-[#0B2545] ring-2 ring-[#0B2545] shadow-sm"
-                      : "bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-lg ${firmaTypeSelect === "PERSONA NATURAL" ? "bg-[#0B2545] text-white" : "bg-blue-100 text-[#0B2545]"}`}>
-                      <User className="w-5 h-5" />
-                    </div>
+            {/* Requisitos de Solicitud (Persona Jurídica) y Arte Visual Oficial */}
+            <section className="bg-slate-900 text-white rounded-2xl p-6 border border-slate-800 shadow-md">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Columna Izquierda: Requisitos en Texto con Botón de Copiar */}
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-3">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900">Persona Natural</h3>
-                      <span className="text-[11px] text-slate-500 font-medium block">Sin RUC / Uso Personal</span>
+                      <h3 className="text-base font-extrabold text-amber-400 flex items-center gap-2">
+                        <Building2 className="w-5 h-5 text-amber-400 shrink-0" />
+                        <span>Requisitos de Solicitud (Persona Jurídica)</span>
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Envía estos requisitos oficiales para la emisión inmediata de la firma electrónica.
+                      </p>
                     </div>
-                  </div>
-                </button>
 
-                {/* 2. Persona Natural con RUC */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFirmaTypeSelect("PERSONA NATURAL RUC");
-                    if (!FIRMAS_DATA.some(f => f.tipo === "PERSONA NATURAL RUC" && selectedVigencias.includes(f.vigencia))) {
-                      setSelectedVigencias(["1 AÑO"]);
-                    }
-                  }}
-                  className={`p-4 rounded-xl border text-left transition-all cursor-pointer relative ${
-                    firmaTypeSelect === "PERSONA NATURAL RUC"
-                      ? "bg-orange-50/90 border-orange-500 ring-2 ring-orange-500 shadow-sm"
-                      : "bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-lg ${firmaTypeSelect === "PERSONA NATURAL RUC" ? "bg-orange-500 text-white" : "bg-orange-100 text-orange-700"}`}>
-                      <Briefcase className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900">Con RUC</h3>
-                      <span className="text-[11px] text-slate-500 font-medium block">Profesionales &amp; Comerciantes</span>
-                    </div>
-                  </div>
-                </button>
-
-                {/* 3. Persona Jurídica */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFirmaTypeSelect("PERSONA JURIDICA");
-                    if (!FIRMAS_DATA.some(f => f.tipo === "PERSONA JURIDICA" && selectedVigencias.includes(f.vigencia))) {
-                      setSelectedVigencias(["1 AÑO"]);
-                    }
-                  }}
-                  className={`p-4 rounded-xl border text-left transition-all cursor-pointer relative ${
-                    firmaTypeSelect === "PERSONA JURIDICA"
-                      ? "bg-purple-50/90 border-purple-600 ring-2 ring-purple-600 shadow-sm"
-                      : "bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-lg ${firmaTypeSelect === "PERSONA JURIDICA" ? "bg-purple-600 text-white" : "bg-purple-100 text-purple-700"}`}>
-                      <Building2 className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900">Persona Jurídica</h3>
-                      <span className="text-[11px] text-slate-500 font-medium block">Empresas &amp; Reps. Legales</span>
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </section>
-
-            {/* Step 2: Vigencias y Precios de la Firma Seleccionada */}
-            <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
-              <div className="flex justify-between items-center border-b border-slate-100 pb-3 flex-wrap gap-3">
-                <div>
-                  <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-blue-600" />
-                    <span>2. Vigencia y Precios: {firmaTypeSelect === "PERSONA NATURAL" ? "Persona Natural" : firmaTypeSelect === "PERSONA NATURAL RUC" ? "Persona Natural con RUC" : "Persona Jurídica"}</span>
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Selecciona 1 o 2 vigencias para comparar sus costos o modifica los valores según tu propuesta comercial.
-                  </p>
-                </div>
-                
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingFirmaPrices(!isEditingFirmaPrices)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs border ${
-                      isEditingFirmaPrices
-                        ? "bg-amber-500 text-slate-950 border-amber-600 font-black shadow-xs ring-2 ring-amber-300"
-                        : "bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-300"
-                    }`}
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>{isEditingFirmaPrices ? "Guardar Precios" : "Modificar Precios"}</span>
-                  </button>
-
-                  {Object.keys(customFirmasPrices).length > 0 && (
                     <button
                       type="button"
-                      onClick={handleResetFirmaPrecios}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-all cursor-pointer"
-                      title="Restablecer precios a los valores estándar"
+                      onClick={() => handleCopyRequirements(
+                        `Formatos de archivos: Imagen o Pdf. 📂\n\n✅ Cédula o pasaporte ambos lados a color, legible y vigente.\n\n✅ Fotografía sosteniendo la cédula o pasaporte por la parte frontal a la altura de su cuello.\n\n✅ Certificado de Ruc.\n✅ Nombramiento \n✅ Constitución\n✅ Comprobante de pago.\n \nDATOS DEL TITULAR DE LA FIRMA: 📧📲\n\n✅ Correo electrónico personal:\n✅ Correo electrónico de la empresa:\n✅ Celular:\n✅ Dirección de domicilio:\n✅ Provincia de residencia: \n✅ Ciudad de residencia:`
+                      )}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-xs font-black rounded-xl shadow-md transition-all cursor-pointer shrink-0"
                     >
-                      <RotateCcw className="w-3 h-3 text-slate-500" />
-                      <span>Restablecer</span>
+                      {copiedRequirements ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>¡Copiados!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          <span>Copiar Requisitos</span>
+                        </>
+                      )}
                     </button>
-                  )}
-
-                  <span className="text-xs text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                    Valores finales con IVA 15% incluido
-                  </span>
-                </div>
-              </div>
-
-              {/* Vigencia Cards Grid */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-600 px-1 flex-wrap gap-2">
-                  <span className="flex items-center gap-1.5 text-slate-800 font-extrabold">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span>
-                      {isEditingFirmaPrices 
-                        ? "Escribe los nuevos valores directamente en cada tarjeta:"
-                        : "Haz clic en las tarjetas para seleccionar las vigencias a comparar (máx. 2):"}
-                    </span>
-                  </span>
-                  {selectedVigencias.length === 1 && !isEditingFirmaPrices && (
-                    <span className="text-[11px] text-amber-800 font-bold bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 shadow-2xs">
-                      💡 Comparación activa: {selectedVigencias[0]} vs {selectedVigencias[0] === "1 AÑO" ? "2 AÑOS" : "1 AÑO"} (predeterminada)
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                  {FIRMAS_DATA.filter(f => f.tipo === firmaTypeSelect).map((item) => {
-                    const isSelected = selectedVigencias.includes(item.vigencia);
-                    const indexInSelection = selectedVigencias.indexOf(item.vigencia);
-                    const priceValue = getFirmaPrecio(item.tipo, item.vigencia, item.precio);
-                    const isCustomPrice = customFirmasPrices[`${item.tipo}__${item.vigencia}`] !== undefined;
-
-                    return (
-                      <button
-                        key={item.vigencia}
-                        type="button"
-                        onClick={() => handleToggleVigencia(item.vigencia)}
-                        className={`p-4 rounded-xl border text-center transition-all cursor-pointer relative flex flex-col justify-between space-y-2 group ${
-                          isSelected
-                            ? indexInSelection === 0
-                              ? "bg-slate-900 text-white border-slate-900 ring-2 ring-amber-400 shadow-md"
-                              : "bg-[#0B2545] text-white border-[#0B2545] ring-2 ring-emerald-400 shadow-md"
-                            : "bg-slate-50 text-slate-800 border-slate-200 hover:border-slate-400 hover:bg-slate-100"
-                        }`}
-                      >
-                        {item.vigencia !== "1 AÑO" && item.vigencia !== "15 DIAS" && !isSelected && !isCustomPrice && (
-                          <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
-                            Mayor Ahorro
-                          </span>
-                        )}
-
-                        {isCustomPrice && (
-                          <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-purple-600 text-white font-black text-[8.5px] px-2 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
-                            Personalizado
-                          </span>
-                        )}
-
-                        {isSelected && (
-                          <span className={`absolute -top-2.5 left-1/2 -translate-x-1/2 font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1 ${
-                            indexInSelection === 0
-                              ? "bg-amber-400 text-slate-950"
-                              : "bg-emerald-500 text-white"
-                          }`}>
-                            <Check className="w-2.5 h-2.5" />
-                            <span>Opción {indexInSelection + 1}</span>
-                          </span>
-                        )}
-
-                        <div>
-                          <span className={`text-xs font-extrabold uppercase tracking-wider block ${
-                            isSelected ? "text-amber-300" : "text-slate-500"
-                          }`}>
-                            {item.vigencia}
-                          </span>
-
-                          {isEditingFirmaPrices ? (
-                            <div className="mt-1.5 space-y-1" onClick={(e) => e.stopPropagation()}>
-                              <div className="relative">
-                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">$</span>
-                                <input
-                                  type="number"
-                                  step="0.50"
-                                  min="0"
-                                  value={priceValue}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value);
-                                    handleUpdateFirmaPrecio(item.tipo, item.vigencia, isNaN(val) ? 0 : val);
-                                  }}
-                                  className="w-full bg-white text-slate-950 border-2 border-amber-400 font-black text-center text-sm py-1 pl-4 pr-1 rounded-lg shadow-inner focus:outline-none focus:ring-2 focus:ring-amber-500"
-                                  placeholder="0.00"
-                                />
-                              </div>
-                              <span className="text-[9px] text-amber-600 font-bold block">Editar precio</span>
-                            </div>
-                          ) : (
-                            <div className="text-xl font-black mt-1">
-                              ${priceValue.toFixed(2)}
-                            </div>
-                          )}
-
-                          <span className={`text-[10px] block font-semibold ${
-                            isSelected ? "text-slate-300" : "text-emerald-600"
-                          }`}>
-                            IVA 15% Incluido
-                          </span>
-                        </div>
-
-                        {/* Comparison selection indicator */}
-                        <div className="pt-2 border-t border-slate-200/20">
-                          <span 
-                            className={`w-full py-1 px-2 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-1 ${
-                              isSelected 
-                                ? "bg-amber-400/20 text-amber-300 border border-amber-400/30" 
-                                : "text-slate-400 group-hover:text-slate-600"
-                            }`}
-                          >
-                            <span>{isSelected ? "✓ Comparación Activa" : "Clic para Comparar"}</span>
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </section>
-
-            {/* CONTENEDOR DE ARGUMENTO DE VENTA Y REQUISITOS (LADO A LADO CON IGUAL DISTANCIA AL MARCO) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-              {/* Columna Izquierda: Mensaje & Argumento Comercial */}
-              {(() => {
-                const list = FIRMAS_DATA.filter(f => f.tipo === firmaTypeSelect).map(f => ({
-                  ...f,
-                  precio: getFirmaPrecio(f.tipo, f.vigencia, f.precio),
-                }));
-
-                const getYearsFromVigencia = (v: string): number => {
-                  if (v === "15 DIAS") return 15 / 365;
-                  if (v.includes("1")) return 1;
-                  if (v.includes("2")) return 2;
-                  if (v.includes("3")) return 3;
-                  if (v.includes("4")) return 4;
-                  if (v.includes("5")) return 5;
-                  return 1;
-                };
-
-                let v1_str = selectedVigencias[0] || "1 AÑO";
-                let v2_str = selectedVigencias[1];
-
-                if (!v2_str || selectedVigencias.length === 1) {
-                  if (v1_str === "1 AÑO") {
-                    v2_str = "2 AÑOS";
-                  } else {
-                    v2_str = "1 AÑO";
-                  }
-                }
-
-                let item1 = list.find(f => f.vigencia === v1_str) || list[0];
-                let item2 = list.find(f => f.vigencia === v2_str) || list.find(f => f.vigencia === "2 AÑOS") || list[0];
-
-                const years1 = getYearsFromVigencia(item1.vigencia);
-                const years2 = getYearsFromVigencia(item2.vigencia);
-
-                let vShorter = years1 <= years2 ? item1 : item2;
-                let vLonger = years1 <= years2 ? item2 : item1;
-
-                if (vShorter.vigencia === vLonger.vigencia) {
-                  const altLonger = list.find(f => f.vigencia === "2 AÑOS") || list[list.length - 1];
-                  if (altLonger && altLonger.vigencia !== vShorter.vigencia) {
-                    vLonger = altLonger;
-                  }
-                }
-
-                const yearsShorter = getYearsFromVigencia(vShorter.vigencia);
-                const yearsLonger = getYearsFromVigencia(vLonger.vigencia);
-
-                const priceShorter = vShorter.precio;
-                const priceLonger = vLonger.precio;
-
-                const diffPrice = Math.max(0, priceLonger - priceShorter);
-                const diffYearsNum = Math.round(Math.max(1, yearsLonger - yearsShorter));
-                const diffYearsText = diffYearsNum === 1 ? "1 año más" : `${diffYearsNum} años más`;
-
-                const annualLonger = priceLonger / (yearsLonger || 1);
-
-                const item1Year = list.find(f => f.vigencia === "1 AÑO") || list[0];
-                const cost1YearRenewal = item1Year.precio * (yearsLonger || 1);
-                const ahorroTotal = Math.max(0, cost1YearRenewal - priceLonger);
-                const pctAhorro = cost1YearRenewal > 0 ? ((ahorroTotal / cost1YearRenewal) * 100).toFixed(0) : "0";
-
-                const isPromoEmprende = firmaTypeSelect === "PROMO EMPRENDE";
-
-                const pitchMsg = isPromoEmprende ? `🔥 *OFERTA RECOMENDADA PROMO EMPRENDE - ANF AC* 📜\n\n• *Opción por ${vShorter.vigencia}:* *$${priceShorter.toFixed(2)} USD*\n\n💡 *OPCIÓN RECOMENDADA por ${vLonger.vigencia}:* *$${priceLonger.toFixed(2)} USD*\n👉 Por solo *$${diffPrice.toFixed(2)} USD adicionales*, obtiene *${diffYearsText}* de vigencia.\n👉 Firma + Facturador a solo *$${annualLonger.toFixed(2)} USD por año*.\n👉 Ahorro total: *$${ahorroTotal.toFixed(2)} USD* (${pctAhorro}% de descuento).\n🎁 *INCLUYE GRATIS:* Facturador Electrónico + Firmador PC + App Celular.\n\n¿Desea emitir su factura con la opción recomendada de *${vLonger.vigencia}*?`
-                : `🔥 *OFERTA RECOMENDADA FIRMA ELECTRÓNICA - ANF AC* 📜\n\n• *Opción por ${vShorter.vigencia}:* *$${priceShorter.toFixed(2)} USD*\n\n💡 *OPCIÓN RECOMENDADA por ${vLonger.vigencia}:* *$${priceLonger.toFixed(2)} USD*\n👉 Por solo *$${diffPrice.toFixed(2)} USD adicionales*, obtiene *${diffYearsText}* de vigencia.\n👉 Su firma le sale a solo *$${annualLonger.toFixed(2)} USD por año*.\n👉 Ahorro total: *$${ahorroTotal.toFixed(2)} USD* (${pctAhorro}% de descuento).\n🎁 *INCLUYE GRATIS:* Firmador PC + App Celular por los ${vLonger.vigencia}.\n\n¿Desea emitir su factura con la opción recomendada de *${vLonger.vigencia}*?`;
-
-                return (
-                  <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100/60 border border-amber-300 rounded-2xl p-6 space-y-4 shadow-sm h-full flex flex-col justify-between">
-                    {/* Header bar */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-amber-200/80 pb-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2.5 rounded-xl bg-amber-500 text-slate-950 font-black shadow-xs shrink-0">
-                          <Sparkles className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-black text-slate-900 flex items-center gap-1.5 flex-wrap">
-                            <span>💡 Argumento de Venta Comparativo</span>
-                            <span className="bg-amber-200 text-amber-950 text-xs px-2 py-0.5 rounded-md font-extrabold border border-amber-300">
-                              {vShorter.vigencia} vs {vLonger.vigencia}
-                            </span>
-                          </h4>
-                          <p className="text-xs text-amber-900 font-medium mt-0.5">
-                            {isPromoEmprende 
-                              ? `Por solo +$${diffPrice.toFixed(2)} USD obtiene ${diffYearsText} de Firma + Facturador.`
-                              : `Por solo +$${diffPrice.toFixed(2)} USD obtiene ${diffYearsText} de vigencia.`
-                            }
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleCopyPitch(pitchMsg)}
-                        className="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-black rounded-xl shadow-md transition-all cursor-pointer shrink-0"
-                      >
-                        {copiedPitch ? (
-                          <>
-                            <Check className="w-4 h-4" />
-                            <span>¡Copiado!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-4 h-4" />
-                            <span>Copiar Argumento</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    {/* Comparative Cards Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      <div className="bg-white p-3 rounded-xl border border-amber-200 shadow-2xs space-y-1">
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-                          1️⃣ Opción {vShorter.vigencia}
-                        </span>
-                        <div className="text-base font-black text-slate-900">
-                          ${priceShorter.toFixed(2)} USD
-                        </div>
-                        <span className="text-[10px] text-slate-500 block font-medium">
-                          Inversión base
-                        </span>
-                      </div>
-
-                      <div className="bg-white p-3 rounded-xl border border-emerald-300 shadow-2xs space-y-1">
-                        <span className="text-[10px] font-black text-emerald-800 uppercase tracking-wider block">
-                          2️⃣ Opción {vLonger.vigencia}
-                        </span>
-                        <div className="text-base font-black text-emerald-900">
-                          ${priceLonger.toFixed(2)} USD
-                        </div>
-                        <span className="text-[10px] text-emerald-800 block font-bold">
-                          +$${diffPrice.toFixed(2)} ({annualLonger.toFixed(2)}/año)
-                        </span>
-                      </div>
-
-                      <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 text-white p-3 rounded-xl border border-emerald-800 shadow-sm space-y-1">
-                        <span className="text-[10px] font-black uppercase tracking-wider block text-emerald-200">
-                          💰 Ahorro Total
-                        </span>
-                        <div className="text-base font-black text-white">
-                          ${ahorroTotal.toFixed(2)} USD
-                        </div>
-                        <span className="text-[10px] font-extrabold text-emerald-100 block truncate">
-                          {isPromoEmprende ? "🎁 Facturador gratis" : "🎁 Firmador gratis"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Text Preview Box for Advisor */}
-                    <div className="space-y-1.5 pt-1 flex-1 flex flex-col justify-end">
-                      <span className="text-[11px] font-extrabold text-amber-950 uppercase tracking-wider block">
-                        📋 Vista previa del mensaje directo para el cliente:
-                      </span>
-                      <div className="bg-slate-950 text-amber-200 p-3.5 rounded-xl text-xs font-mono whitespace-pre-wrap leading-relaxed border border-slate-800 h-44 overflow-y-auto select-all shadow-inner">
-                        {pitchMsg}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Columna Derecha: Requisitos de Solicitud */}
-              <div className="bg-slate-900 text-white rounded-2xl p-6 border border-slate-800 shadow-md space-y-4 h-full flex flex-col justify-between">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-3">
-                  <div>
-                    <h4 className="text-sm font-extrabold text-amber-400 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span>Requisitos de Solicitud ({firmaTypeSelect === "PERSONA JURIDICA" ? "Persona Jurídica" : "Persona Natural / RUC / Promo"})</span>
-                    </h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Envía estos requisitos para la emisión inmediata de la firma electrónica.
-                    </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleCopyRequirements(
-                      firmaTypeSelect === "PERSONA JURIDICA"
-                        ? `Formatos de archivos: Imagen o Pdf. 📂\n\n✅ Cédula o pasaporte ambos lados a color, legible y vigente.\n\n✅ Fotografía sosteniendo la cédula o pasaporte por la parte frontal a la altura de su cuello.\n\n✅ Certificado de Ruc.\n✅ Nombramiento \n✅ Constitución\n✅ Comprobante de pago.\n \nDATOS DEL TITULAR DE LA FIRMA: 📧📲\n\n✅ Correo electrónico personal:\n✅ Correo electrónico de la empresa:\n✅ Celular:\n✅ Dirección de domicilio:\n✅ Provincia de residencia: \n✅ Ciudad de residencia:`
-                        : `Formatos de archivos: Imagen o Pdf. 📂\n\n✅ Cédula o pasaporte, ambos lados, a color, legible y vigente.\n\n✅ Fotografía sosteniendo la cédula o pasaporte por la parte frontal a la altura de su cuello.\n\n✅ Comprobante de pago.\n\n✅ Certificado Ruc.\n \nDatos del titular de la firma electrónica: 📧📲\n\n✅ Correo electrónico personal:\n✅ Celular:\n✅ Dirección de domicilio:\n✅ Provincia de residencia: \n✅ Ciudad de residencia:`
-                    )}
-                    className="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-xs font-black rounded-xl shadow-md transition-all cursor-pointer shrink-0"
-                  >
-                    {copiedRequirements ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        <span>¡Copiados!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" />
-                        <span>Copiar Requisitos</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-xs font-mono text-slate-200 leading-relaxed space-y-3 flex-1 overflow-y-auto max-h-[340px]">
-                  {firmaTypeSelect === "PERSONA JURIDICA" ? (
-                    <>
-                      <p className="font-bold text-amber-300">Formatos de archivos: Imagen o Pdf. 📂</p>
-                      <ul className="space-y-1.5 pl-1">
-                        <li>✅ Cédula o pasaporte ambos lados a color, legible y vigente.</li>
-                        <li>✅ Fotografía sosteniendo la cédula o pasaporte por la parte frontal a la altura de su cuello.</li>
-                        <li>✅ Certificado de Ruc.</li>
-                        <li>✅ Nombramiento</li>
-                        <li>✅ Constitución</li>
-                        <li>✅ Comprobante de pago.</li>
-                      </ul>
-                      <p className="font-bold text-amber-300 pt-2 border-t border-slate-800">DATOS DEL TITULAR DE LA FIRMA: 📧📲</p>
+                  {/* Lista Detallada de Requisitos Persona Jurídica */}
+                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono text-slate-200 leading-relaxed space-y-3 shadow-inner">
+                    <p className="font-bold text-amber-300">Formatos de archivos: Imagen o Pdf. 📂</p>
+                    <ul className="space-y-1.5 pl-1">
+                      <li>✅ Cédula o pasaporte ambos lados a color, legible y vigente.</li>
+                      <li>✅ Fotografía sosteniendo la cédula o pasaporte por la parte frontal a la altura de su cuello.</li>
+                      <li>✅ Certificado de Ruc.</li>
+                      <li>✅ Nombramiento</li>
+                      <li>✅ Constitución</li>
+                      <li>✅ Comprobante de pago.</li>
+                    </ul>
+                    <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                      <p className="font-bold text-amber-300">DATOS DEL TITULAR DE LA FIRMA: 📧📲</p>
                       <ul className="space-y-1 pl-1 text-slate-300">
                         <li>✅ Correo electrónico personal:</li>
                         <li>✅ Correo electrónico de la empresa:</li>
@@ -5135,38 +4644,110 @@ export default function App() {
                         <li>✅ Provincia de residencia:</li>
                         <li>✅ Ciudad de residencia:</li>
                       </ul>
-                    </>
-                  ) : (
-                    <>
-                      <p className="font-bold text-amber-300">Formatos de archivos: Imagen o Pdf. 📂</p>
-                      <ul className="space-y-1.5 pl-1">
-                        <li>✅ Cédula o pasaporte, ambos lados, a color, legible y vigente.</li>
-                        <li>✅ Fotografía sosteniendo la cédula o pasaporte por la parte frontal a la altura de su cuello.</li>
-                        <li>✅ Comprobante de pago.</li>
-                        <li>✅ Certificado Ruc.</li>
-                      </ul>
-                      <p className="font-bold text-amber-300 pt-2 border-t border-slate-800">Datos del titular de la firma electrónica: 📧📲</p>
-                      <ul className="space-y-1 pl-1 text-slate-300">
-                        <li>✅ Correo electrónico personal:</li>
-                        <li>✅ Celular:</li>
-                        <li>✅ Dirección de domicilio:</li>
-                        <li>✅ Provincia de residencia:</li>
-                        <li>✅ Ciudad de residencia:</li>
-                      </ul>
-                    </>
-                  )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Columna Derecha: Arte Visual Oficial */}
+                <div className="lg:col-span-5 bg-slate-950/90 rounded-xl p-4 border border-amber-500/30 space-y-3 shadow-inner">
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2 py-0.5 rounded shadow-2xs">
+                        Arte Visual Oficial
+                      </span>
+                      <span className="text-xs font-bold text-slate-200">
+                        Requisito Firma (Persona Jurídica)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    {/* Contenedor Imagen Tamaño Medio */}
+                    <div
+                      onClick={() => setPreviewArteModal({
+                        planName: "Requisitos de Firma Electrónica - Persona Jurídica",
+                        filename: "requisito firma.png"
+                      })}
+                      className="w-full sm:w-52 h-52 rounded-xl overflow-hidden border border-amber-400/40 bg-slate-900 shrink-0 relative group cursor-pointer shadow-sm flex items-center justify-center"
+                      title="Haz clic para agrandar con zoom interactivo"
+                    >
+                      <img
+                        src="/artes/requisito%20firma.png"
+                        alt="Requisito Firma Persona Jurídica"
+                        className="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform duration-200"
+                      />
+                      <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <div className="bg-slate-900/95 text-white px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-md border border-amber-400/40">
+                          <Eye className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Agrandar</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Opciones: Agrandar, Descargar, Copiar */}
+                    <div className="flex flex-col gap-2.5 w-full flex-1">
+                      {/* 1. Agrandar */}
+                      <button
+                        type="button"
+                        onClick={() => setPreviewArteModal({
+                          planName: "Requisitos de Firma Electrónica - Persona Jurídica",
+                          filename: "requisito firma.png"
+                        })}
+                        className="w-full px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-slate-700 hover:border-slate-600 transition-all cursor-pointer active:scale-95"
+                      >
+                        <ZoomIn className="w-4 h-4 text-amber-400" />
+                        <span>Agrandar Arte</span>
+                      </button>
+
+                      {/* 2. Descargar */}
+                      <button
+                        type="button"
+                        onClick={handleDownloadRequisitoImage}
+                        className="w-full px-3 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-2xs hover:shadow transition-all cursor-pointer active:scale-95"
+                      >
+                        <Download className="w-4 h-4 text-slate-950" />
+                        <span>Descargar Imagen</span>
+                      </button>
+
+                      {/* 3. Copiar */}
+                      <button
+                        type="button"
+                        onClick={handleCopyRequisitoImage}
+                        className="w-full px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-2xs hover:shadow transition-all cursor-pointer active:scale-95"
+                      >
+                        {copiedReqImage ? (
+                          <>
+                            <Check className="w-4 h-4 text-white" />
+                            <span>¡Imagen Copiada!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4 text-white" />
+                            <span>Copiar Imagen</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* TABLA COMPARATIVA DE TIPOS DE FIRMA AT THE BOTTOM */}
-            <div className="pt-6 border-t border-slate-200 space-y-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-[#0B2545]" />
-                  <span>Tabla Comparativa de Modalidades de Firma Electrónica</span>
-                </h3>
-                <span className="text-[11px] text-slate-500 font-medium">Precios finales incluyen el 15% de IVA</span>
+            {/* TABLA DE PRECIO SUGERIDO PARA LA VENTA */}
+            <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <Sliders className="w-5 h-5 text-[#0B2545]" />
+                    <span>Precio Sugerido para la Venta</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Precios finales recomendados para comercialización de firmas electrónicas ANF AC.
+                  </p>
+                </div>
+                <span className="text-xs text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+                  Precios finales incluyen el 15% de IVA
+                </span>
               </div>
 
               <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
@@ -5243,31 +4824,10 @@ export default function App() {
                         </span>
                       </td>
                     </tr>
-
-                    {/* Promo Emprende */}
-                    <tr className="hover:bg-amber-50/50 transition-colors bg-amber-50/20">
-                      <td className="p-3 font-extrabold text-slate-900 flex items-center gap-1.5 whitespace-nowrap">
-                        <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                        <span>Promo Emprende</span>
-                      </td>
-                      <td className="p-3 text-slate-600 font-medium min-w-[220px]">Pymes y emprendedores (Firma + Sistema de Facturación UpConta)</td>
-                      <td className="p-3 text-center font-bold text-slate-900">$24.00</td>
-                      <td className="p-3 text-center font-bold text-slate-900">$30.00</td>
-                      <td className="p-3 text-center font-bold text-slate-900">$38.00</td>
-                      <td className="p-3 text-center text-slate-400 font-semibold">—</td>
-                      <td className="p-3 text-center text-slate-400 font-semibold">—</td>
-                      <td className="p-3 text-center whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded font-black text-[10px]">
-                          <Sparkles className="w-3 h-3 text-amber-600" />
-                          Incluye Facturación
-                        </span>
-                      </td>
-                    </tr>
                   </tbody>
                 </table>
               </div>
-            </div>
-
+            </section>
           </div>
         )}
 

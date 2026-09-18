@@ -49,7 +49,8 @@ export function ImageZoomLightbox({
 
   if (!isOpen) return null;
 
-  const fileUrl = `/artes/${encodeURIComponent(filename)}`;
+  const fileUrl = filename.startsWith("/") ? filename : `/artes/${encodeURIComponent(filename)}`;
+  const downloadName = filename.split("/").pop() || filename;
 
   const handleZoomIn = () => {
     setZoom((prev) => Math.min(4, Number((prev + 0.25).toFixed(2))));
@@ -136,7 +137,7 @@ export function ImageZoomLightbox({
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl;
-      a.download = filename;
+      a.download = downloadName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -146,11 +147,25 @@ export function ImageZoomLightbox({
     }
   };
 
-  const handleCopy = () => {
-    const fullUrl = `${window.location.origin}${fileUrl}`;
-    navigator.clipboard.writeText(fullUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      if (blob && navigator.clipboard && typeof (window as any).ClipboardItem !== "undefined") {
+        await navigator.clipboard.write([
+          new (window as any).ClipboardItem({ [blob.type || "image/png"]: blob })
+        ]);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      }
+      throw new Error("ClipboardItem not supported");
+    } catch {
+      const fullUrl = `${window.location.origin}${fileUrl}`;
+      navigator.clipboard.writeText(fullUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
