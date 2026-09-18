@@ -62,6 +62,7 @@ import {
   UserPlus,
   Crown,
   ExternalLink,
+  Loader2,
   Eye,
   EyeOff,
   X
@@ -85,8 +86,10 @@ import {
   FirmaElectronica
 } from "./data";
 import { jsPDF } from "jspdf";
+import { UPCONTA_LOGO_BASE64 } from "./assets/upcontaLogoBase64";
 import { AdminModuleMockups } from "./components/AdminModuleMockups";
 import { ColorPickerDialog } from "./components/ColorPickerDialog";
+import { ImageZoomLightbox } from "./components/ImageZoomLightbox";
 import { DynamicBrandLogo, UpContaLogo, AnfLogo, CoBrandLogo } from "./components/GodiLogo";
 import { VentasModule } from "./components/VentasModule";
 import { ContadorModule } from "./components/ContadorModule";
@@ -413,7 +416,8 @@ export default function App() {
   }, [userRole, mainTab, activeTab, permissionsMap, userPerms]);
 
   // Category tab state
-  const [tipoPlan, setTipoPlan] = useState<"facturacion" | "erp" | "contador">("facturacion");
+  const [tipoPlan, setTipoPlan] = useState<"facturacion" | "erp" | "contador" | "brochures">("facturacion");
+  const [downloadingBrochureId, setDownloadingBrochureId] = useState<string | null>(null);
   
   // Selected plan inside active category
   const [selectedPlanName, setSelectedPlanName] = useState<string>("");
@@ -473,6 +477,9 @@ export default function App() {
 
   // State for Color Picker Dialog ("Abanico de Colores")
   const [colorPickerTarget, setColorPickerTarget] = useState<"bg" | "title" | "sub" | null>(null);
+
+  // State for Modal Preview of Official Plan Flyer / Art
+  const [previewArteModal, setPreviewArteModal] = useState<{ planName: string; filename: string } | null>(null);
 
   // State for Plataforma de Prueba Credentials Copy Feedback & Password Visibility
   const [showPruebaPassword, setShowPruebaPassword] = useState<boolean>(false);
@@ -863,7 +870,7 @@ export default function App() {
     setCustomPlanPrice(null);
   }, [selectedPlanName, billingCycle, tipoPlan]);
 
-  const activePlanList = PLANES_DATA[tipoPlan] || [];
+  const activePlanList = (tipoPlan !== "brochures" ? PLANES_DATA[tipoPlan] : []) || [];
   const viewedPlanObj = (selectedPlanName && activePlanList.find(p => p.nombre === selectedPlanName)) || activePlanList[0] || null;
 
   // Sync active module when plan changes based on its tier modules
@@ -1856,41 +1863,20 @@ export default function App() {
 
     const metrics = extractQuickMetrics(planObj.modulos);
 
-    // Render GoDi Official Logo to Canvas for high-definition PDF embedding
-    const canvas = document.createElement("canvas");
-    canvas.width = 650;
-    canvas.height = 180;
-    const ctx = canvas.getContext("2d");
-
-    let logoDataUrl = "";
-    if (ctx) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // "GoDi" in Royal Slate Blue gradient
-      const gradient = ctx.createLinearGradient(0, 0, 480, 0);
-      gradient.addColorStop(0, "#0B2545");
-      gradient.addColorStop(1, "#3B51A3");
-
-      ctx.font = "900 120px 'Montserrat', 'Inter', 'SF Pro Display', sans-serif";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = gradient;
-      ctx.fillText("GoDi", 10, 90);
-
-      logoDataUrl = canvas.toDataURL("image/png");
-    }
-
     // 1. Header Section
     // Top background light container
     pdf.setFillColor(250, 252, 255);
     pdf.rect(0, 0, PAGE_W, 30, "F");
 
-    // Header GoDi Blue Accent Strip
+    // Header UpConta Blue Accent Strip
     pdf.setFillColor(...C_BLUE);
     pdf.rect(0, 30, PAGE_W, 1.8, "F");
 
-    // Embed GoDi Logo on Header Left
-    if (logoDataUrl) {
-      pdf.addImage(logoDataUrl, "PNG", MX, 7, 52, 14.5);
+    // Embed Official UpConta Logo from repository on Header Left
+    try {
+      pdf.addImage(UPCONTA_LOGO_BASE64, "PNG", MX, 6.5, 52, 15.4);
+    } catch (e) {
+      console.warn("Error embedding official UpConta logo in PDF:", e);
     }
 
     // Header Right Info
@@ -1909,7 +1895,7 @@ export default function App() {
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(8.5);
     pdf.setTextColor(...C_TEXT_MUTED);
-    pdf.text(`GODI • ECUADOR • ${todayStr}`, PAGE_W - MX, 24, { align: "right" });
+    pdf.text(`UPCONTA • ECUADOR • ${todayStr}`, PAGE_W - MX, 24, { align: "right" });
 
     // 2. Overview & Financial Summary Side-by-Side (Y: 36 to 78)
     const cardY = 36;
@@ -2051,7 +2037,7 @@ export default function App() {
       });
     });
 
-    // 4. Footer Section: Centered Godi Branding
+    // 4. Footer Section: Centered UpConta Branding
     const footerY = 278;
     pdf.setDrawColor(...C_BLUE);
     pdf.setLineWidth(0.8);
@@ -2060,16 +2046,275 @@ export default function App() {
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(9.5);
     pdf.setTextColor(...C_NAVY);
-    pdf.text("GODI — PLATAFORMA EXCLUSIVA PARA SOCIOS Y DISTRIBUIDORES", PAGE_W / 2, footerY + 5.5, { align: "center" });
+    pdf.text("UPCONTA — PLATAFORMA EXCLUSIVA PARA SOCIOS Y DISTRIBUIDORES", PAGE_W / 2, footerY + 5.5, { align: "center" });
 
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(7.5);
     pdf.setTextColor(100, 116, 139);
-    pdf.text("Documento oficial emitido por la Red Godi para distribución y demostración técnica", PAGE_W / 2, footerY + 9.5, { align: "center" });
+    pdf.text("Documento oficial emitido por UpConta para distribución y demostración técnica", PAGE_W / 2, footerY + 9.5, { align: "center" });
 
     // Download PDF
     pdf.save(`Ficha-Tecnica-${planObj.nombre.replace(/\s+/g, '-')}.pdf`);
-    trackActivity("fichas_impresas_sistema", `Ficha técica de plan: ${planObj.nombre}`);
+    trackActivity("fichas_impresas_sistema", `Ficha técnica de plan: ${planObj.nombre}`);
+  };
+
+  // Official Visual Art mapping for billing, erp and contador plans from public repository
+  const PLAN_ARTE_MAP: Record<string, string> = {
+    "UP LIGHT": "1. LIGHT.png",
+    "UP BASE": "2. BASE.png",
+    "UP POWER": "3. POWER.png",
+    "UP INICIAL": "4. INICIAL.png",
+    "UP INTERMEDIO": "5. INTERMEDIO.png",
+    "UP IDEAL": "6. IDEAL.png",
+    "UP IDEAL PLUS": "6. IDEAL.png",
+    "UP PROFESIONAL": "7. PROFESSIONAL.png",
+    "UP PROFESIONAL PLUS": "7. PROFESSIONAL.png",
+    "UP PROFESSIONAL": "7. PROFESSIONAL.png",
+    "UP ULTRA": "8. ULTRA.png",
+    "ERP START": "start.png",
+    "ERP PLUS": "plus.png",
+    "ERP PREMIUN": "premiun.png",
+    "ERP PREMIUM": "premiun.png",
+    "PLAN ERP START": "start.png",
+    "PLAN ERP PLUS": "plus.png",
+    "PLAN ERP PREMIUN": "premiun.png",
+    "PLAN ERP PREMIUM": "premiun.png",
+    "CONTADOR ILIMITADO": "Plan-Contador-Ilimitado.png",
+    "TAX ILIMITADOS": "Plan-Contador-TAX.png",
+    "CONTADOR 1 EMPRESA": "Plan-Contador-Segmentado.png",
+    "CONTADOR 3 EMPRESA": "Plan-Contador-Segmentado.png",
+    "CONTADOR 6 EMPRESA": "Plan-Contador-Segmentado.png",
+    "CONTADOR 10 EMPRESA": "Plan-Contador-Segmentado.png",
+    "COM FUN ILIMITADO": "COM FUN LIMITADO.png"
+  };
+
+  // 3 Official Images for Plan ERP
+  const ARTES_ERP = [
+    {
+      id: "plan-erp-start",
+      nombre: "Plan ERP START",
+      filename: "start.png",
+      desc: "2.000 comprobantes, usuarios ilimitados, contabilidad y nómina"
+    },
+    {
+      id: "plan-erp-plus",
+      nombre: "Plan ERP PLUS",
+      filename: "plus.png",
+      desc: "Comprobantes ilimitados, punto de venta TPV, restaurantes y WooCommerce"
+    },
+    {
+      id: "plan-erp-premium",
+      nombre: "Plan ERP PREMIUM",
+      filename: "premiun.png",
+      desc: "Multiempresa 3 RUCs, ilimitado total y continuidad operativa"
+    }
+  ];
+
+  // 4 Official Images for Plan Contadores
+  const ARTES_CONTADOR = [
+    {
+      id: "com-fun-ilimitado",
+      nombre: "Com Fun Ilimitado",
+      filename: "COM FUN LIMITADO.png"
+    },
+    {
+      id: "plan-contador-ilimitado",
+      nombre: "Plan Contador Ilimitado",
+      filename: "Plan-Contador-Ilimitado.png"
+    },
+    {
+      id: "plan-contador-segmentado",
+      nombre: "Plan Contador Segmentado",
+      filename: "Plan-Contador-Segmentado.png"
+    },
+    {
+      id: "plan-contador-tax",
+      nombre: "Plan Contador TAX",
+      filename: "Plan-Contador-TAX.png"
+    }
+  ];
+
+  // Official Brochures from Repository - Ordenados por Categoría (Facturación, ERP, Contador, General)
+  const BROCHURES_LIST = [
+    // 1. Facturación
+    {
+      id: "brochure-facturacion-general",
+      nombre: "Brochure General Facturación 2026",
+      filename: "Brochure General Facturación 2026.pdf",
+      categoria: "Facturación"
+    },
+    {
+      id: "brochure-plan-profesional",
+      nombre: "Brochure UpConta Plan Profesional",
+      filename: "Brochure UpConta Plan Profesional.pdf",
+      categoria: "Facturación"
+    },
+    {
+      id: "brochure-plan-ultra",
+      nombre: "Brochure UpConta Plan Ultra",
+      filename: "Brochure UpConta Plan Ultra.pdf",
+      categoria: "Facturación"
+    },
+    // 2. ERP
+    {
+      id: "brochure-erp-start",
+      nombre: "Brochure ERP UpConta Plan Start 2026",
+      filename: "Brochure ERP UpConta Plan Start 2026.pdf",
+      categoria: "ERP"
+    },
+    {
+      id: "brochure-erp-plus",
+      nombre: "Brochure ERP UpConta Plan Plus 2026",
+      filename: "Brochure ERP UpConta Plan Plus 2026.pdf",
+      categoria: "ERP"
+    },
+    {
+      id: "brochure-erp-premium",
+      nombre: "Brochure UpConta Plan Premium 2026",
+      filename: "Brochure UpConta Plan Premium 2026.pdf",
+      categoria: "ERP"
+    },
+    {
+      id: "brochure-erp-general",
+      nombre: "Brochure General Plan ERP 2026",
+      filename: "Brochure General Plan ERP 2026.pdf",
+      categoria: "ERP"
+    },
+    {
+      id: "brochure-erp-cloude",
+      nombre: "Brochure UpConta ERP Plan Cloude",
+      filename: "Brochure UpConta ERP Plan Cloude.pdf",
+      categoria: "ERP"
+    },
+    {
+      id: "brochure-cloude-enterprise",
+      nombre: "Brochure UpConta Plan Cloude Enterprise",
+      filename: "Brochure UpConta Plan Cloude Enterprise.pdf",
+      categoria: "ERP"
+    },
+    // 3. Contador
+    {
+      id: "brochure-contador-ilimitado",
+      nombre: "Brochure Contador Ilimitado 2026",
+      filename: "Brochure Contador Ilimitado 2026.pdf",
+      categoria: "Contador"
+    },
+    {
+      id: "brochure-contador-tax",
+      nombre: "Brochure Contador TAX 2026",
+      filename: "Brochure Contador TAX 2026.pdf",
+      categoria: "Contador"
+    },
+    {
+      id: "brochure-contador-general",
+      nombre: "Brochure General Plan Contadores 2026",
+      filename: "Brochure General Plan Contadores 2026.pdf",
+      categoria: "Contador"
+    },
+    // 4. General / Socios
+    {
+      id: "brochure-socios-general",
+      nombre: "Brochure General Socios AGOSTO 2026",
+      filename: "Brochure General Socios AGOSTO 2026.pdf",
+      categoria: "General"
+    }
+  ];
+
+  const getArteFilenameForPlan = (planName?: string): string | null => {
+    if (!planName) return null;
+    const clean = planName.toUpperCase().replace(/\s+/g, " ").trim();
+    if (PLAN_ARTE_MAP[clean]) return PLAN_ARTE_MAP[clean];
+    if (clean.includes("START")) return "start.png";
+    if (clean.includes("ERP") && clean.includes("PLUS")) return "plus.png";
+    if (clean.includes("PREMIUN") || clean.includes("PREMIUM")) return "premiun.png";
+    if (clean.includes("LIGHT")) return "1. LIGHT.png";
+    if (clean.includes("BASE")) return "2. BASE.png";
+    if (clean.includes("POWER")) return "3. POWER.png";
+    if (clean.includes("INICIAL")) return "4. INICIAL.png";
+    if (clean.includes("INTERMEDIO")) return "5. INTERMEDIO.png";
+    if (clean.includes("IDEAL")) return "6. IDEAL.png";
+    if (clean.includes("PROFESIONAL") || clean.includes("PROFESSIONAL")) return "7. PROFESSIONAL.png";
+    if (clean.includes("ULTRA")) return "8. ULTRA.png";
+    if (clean.includes("TAX")) return "Plan-Contador-TAX.png";
+    if (clean.includes("CONTADOR") && clean.includes("ILIMITADO")) return "Plan-Contador-Ilimitado.png";
+    if (clean.includes("CONTADOR")) return "Plan-Contador-Segmentado.png";
+    if (clean.includes("COM FUN") || clean.includes("LIMITADO")) return "COM FUN LIMITADO.png";
+    return null;
+  };
+
+  const handleDownloadArte = async (planObj: Plan) => {
+    if (!planObj) return;
+    const filename = getArteFilenameForPlan(planObj.nombre);
+
+    if (!filename) {
+      alert(`El arte visual oficial está disponible para los planes de Facturación.`);
+      return;
+    }
+
+    const fileUrl = `/artes/${encodeURIComponent(filename)}`;
+
+    try {
+      const response = await fetch(fileUrl);
+      if (!response.ok) {
+        throw new Error("Archivo no disponible");
+      }
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      trackActivity("png_descargadas_sistema", `Descarga de arte visual: ${filename} para ${planObj.nombre}`);
+    } catch {
+      // Fallback direct link
+      const link = document.createElement("a");
+      link.href = fileUrl;
+      link.download = filename;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      trackActivity("png_descargadas_sistema", `Descarga de arte visual: ${filename} para ${planObj.nombre}`);
+    }
+  };
+
+  const handleDownloadBrochure = async (item: { id: string; nombre: string; filename: string }) => {
+    setDownloadingBrochureId(item.id);
+    try {
+      const fileUrl = `/brochures/${encodeURIComponent(item.filename)}`;
+      const response = await fetch(fileUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const blob = await response.blob();
+      // Ensure application/pdf blob
+      const pdfBlob = new Blob([blob], { type: "application/pdf" });
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = item.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 2500);
+      trackActivity("fichas_impresas_sistema", `Descarga de brochure oficial: ${item.nombre}`);
+    } catch (err) {
+      console.warn("Fallo descarga directa de blob, usando endpoint alternativo:", err);
+      // Fallback: direct download route with forced attachment header
+      const fallbackUrl = `/api/brochures/download/${encodeURIComponent(item.filename)}`;
+      const link = document.createElement("a");
+      link.href = fallbackUrl;
+      link.download = item.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      trackActivity("fichas_impresas_sistema", `Descarga de brochure oficial: ${item.nombre}`);
+    } finally {
+      setTimeout(() => setDownloadingBrochureId(null), 400);
+    }
   };
 
   return (
@@ -2080,6 +2325,16 @@ export default function App() {
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         onProfileUpdated={(newName) => setCurrentUserName(newName)}
+      />
+
+      {/* Modal Preview of Official Plan Arte / Flyer with Zoom and Magnifier */}
+      <ImageZoomLightbox
+        isOpen={!!previewArteModal}
+        title={previewArteModal?.planName || ""}
+        filename={previewArteModal?.filename || ""}
+        onClose={() => setPreviewArteModal(null)}
+        badgeText="Arte Oficial UpConta"
+        resolutionText="1082 x 1349 px • PNG Alta Calidad"
       />
 
       {/* Top Header Navigation */}
@@ -2665,95 +2920,297 @@ export default function App() {
 
         {/* ==================================== TAB 2: PLANES Y FICHAS (SISTEMAS) ==================================== */}
         {(mainTab === "planes_fichas" || mainTab === "comercial") && activeTab === "plan" && (
-          <div className="space-y-8 animate-fade-in">
-            {/* Step-by-Step Category Picker */}
-            <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-md">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-5">
-            <div>
-              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#0B2545]" />
-                1. Selecciona el Tipo de Plan Contable / Software
-              </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Explora las capacidades analíticas de cada categoría de software para tus clientes o empresa.
-              </p>
+          <div className="space-y-6 animate-fade-in">
+            {/* Submenú: Facturación | ERP | Contador | Brochures */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-2 sm:p-2.5 shadow-2xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {/* Facturación */}
+                <button
+                  type="button"
+                  onClick={() => setTipoPlan("facturacion")}
+                  className={`py-2.5 px-3.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    tipoPlan === "facturacion"
+                      ? "bg-[#0B2545] text-white shadow-xs"
+                      : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/70"
+                  }`}
+                >
+                  <FileText className={`w-4 h-4 ${tipoPlan === "facturacion" ? "text-amber-400" : "text-[#0B2545]"}`} />
+                  <span>Facturación</span>
+                </button>
+
+                {/* ERP */}
+                <button
+                  type="button"
+                  onClick={() => setTipoPlan("erp")}
+                  className={`py-2.5 px-3.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    tipoPlan === "erp"
+                      ? "bg-[#0B2545] text-white shadow-xs"
+                      : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/70"
+                  }`}
+                >
+                  <Database className={`w-4 h-4 ${tipoPlan === "erp" ? "text-amber-400" : "text-[#0B2545]"}`} />
+                  <span>ERP</span>
+                </button>
+
+                {/* Contador */}
+                <button
+                  type="button"
+                  onClick={() => setTipoPlan("contador")}
+                  className={`py-2.5 px-3.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    tipoPlan === "contador"
+                      ? "bg-[#0B2545] text-white shadow-xs"
+                      : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/70"
+                  }`}
+                >
+                  <Users className={`w-4 h-4 ${tipoPlan === "contador" ? "text-amber-400" : "text-[#0B2545]"}`} />
+                  <span>Contador</span>
+                </button>
+
+                {/* Brochures */}
+                <button
+                  type="button"
+                  onClick={() => setTipoPlan("brochures")}
+                  className={`py-2.5 px-3.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    tipoPlan === "brochures"
+                      ? "bg-[#0B2545] text-white shadow-xs"
+                      : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/70"
+                  }`}
+                >
+                  <BookOpen className={`w-4 h-4 ${tipoPlan === "brochures" ? "text-amber-400" : "text-[#0B2545]"}`} />
+                  <span>Brochures</span>
+                </button>
+              </div>
             </div>
-            
-            {/* Quick stats indicators */}
-            <div className="flex gap-4 text-xs font-medium text-slate-500 flex-wrap">
-              <div>Facturación: <span className="text-[#0B2545] font-bold">8 planes</span></div>
-              <div className="border-l border-slate-200 pl-4">ERP: <span className="text-[#0B2545] font-bold">3 planes</span></div>
-              <div className="border-l border-slate-200 pl-4">Contador: <span className="text-[#0B2545] font-bold">6 planes</span></div>
+
+            {/* VISTA BROCHURES: Tabla compacta y práctica */}
+            {tipoPlan === "brochures" && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-2xs">
+                <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-[#0B2545]" />
+                    <h3 className="text-sm font-black text-slate-900">
+                      Brochures Oficiales ({BROCHURES_LIST.length})
+                    </h3>
+                  </div>
+                  <span className="text-xs text-slate-500 font-medium">
+                    Descarga directa de documentos oficiales
+                  </span>
+                </div>
+
+                <div className="overflow-hidden rounded-xl border border-slate-200">
+                  <table className="w-full text-left text-xs sm:text-sm">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                      <tr>
+                        <th className="py-2.5 px-3.5">Nombre del Brochure</th>
+                        <th className="py-2.5 px-3.5 w-32 sm:w-36">Categoría</th>
+                        <th className="py-2.5 px-3.5 text-right w-40 sm:w-44">Descarga</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {BROCHURES_LIST.map((item) => {
+                        const isDownloading = downloadingBrochureId === item.id;
+                        const categoryBadges: Record<string, { bg: string; text: string; border: string }> = {
+                          "Facturación": { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
+                          "ERP": { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
+                          "Contador": { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
+                          "General": { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" }
+                        };
+                        const badgeStyle = categoryBadges[item.categoria] || { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-200" };
+
+                        return (
+                          <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-2.5 px-3.5 font-medium text-slate-800">
+                              <div className="flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-red-500 shrink-0" />
+                                <span className="font-semibold text-slate-900">{item.nombre}</span>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3.5">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border ${badgeStyle.bg} ${badgeStyle.text} ${badgeStyle.border}`}>
+                                {item.categoria}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3.5 text-right">
+                              <div className="inline-flex items-center gap-1.5 justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDownloadBrochure(item)}
+                                  disabled={isDownloading}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0B2545] hover:bg-[#133E6D] text-white rounded-lg text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                                  title={`Descargar ${item.filename}`}
+                                >
+                                  {isDownloading ? (
+                                    <>
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                                      <span>Descargando...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Download className="w-3.5 h-3.5 text-amber-400" />
+                                      <span>Descargar</span>
+                                    </>
+                                  )}
+                                </button>
+                                <a
+                                  href={`/brochures/${encodeURIComponent(item.filename)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                                  title="Abrir o previsualizar PDF"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* PLANES UI (Facturación, ERP, Contador) */}
+            {tipoPlan !== "brochures" && (
+              <>
+
+        {/* 3 Artes Oficiales para Planes ERP (En la misma línea horizontal) */}
+        {tipoPlan === "erp" && (
+          <div className="mt-6 mb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              {ARTES_ERP.map((item) => {
+                const fileUrl = `/artes/${encodeURIComponent(item.filename)}`;
+                return (
+                  <div
+                    key={item.id}
+                    className="p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs hover:shadow-sm transition-all flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        onClick={() => setPreviewArteModal({ planName: item.nombre, filename: item.filename })}
+                        className="w-14 h-18 rounded-xl overflow-hidden border border-amber-300 shadow-2xs bg-slate-100 shrink-0 relative group cursor-pointer"
+                        title="Haz clic para previsualizar con zoom"
+                      >
+                        <img
+                          src={fileUrl}
+                          alt={item.nombre}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        />
+                        <div className="absolute inset-0 bg-slate-950/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                          <Eye className="w-4 h-4 text-white drop-shadow" />
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded shadow-2xs">
+                          Arte Oficial ERP
+                        </span>
+                        <h4 className="text-xs sm:text-sm font-black text-slate-900 truncate mt-1">
+                          {item.nombre}
+                        </h4>
+                        <p className="text-[10px] text-slate-500 truncate hidden sm:block">
+                          {item.desc}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(fileUrl);
+                          const blob = await response.blob();
+                          const blobUrl = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = blobUrl;
+                          a.download = item.filename;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+                        } catch {
+                          window.open(fileUrl, "_blank");
+                        }
+                      }}
+                      className="p-2 sm:px-3 sm:py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-2xs hover:shadow transition-all cursor-pointer shrink-0 active:scale-95"
+                      title={`Descargar ${item.filename}`}
+                    >
+                      <Download className="w-3.5 h-3.5 text-slate-950" />
+                      <span className="hidden sm:inline">Descargar</span>
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
+        )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-            
-            {/* Facturacion Tab */}
-            <button
-              onClick={() => setTipoPlan("facturacion")}
-              className={`p-4 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden group ${
-                tipoPlan === "facturacion"
-                  ? "bg-blue-50/60 border-[#0B2545] shadow-sm"
-                  : "bg-slate-50 border-slate-200 hover:border-slate-300 hover:bg-slate-100/50"
-              }`}
-            >
-              <div className="flex justify-between items-start">
-                <div className="p-2 bg-[#0B2545]/10 border border-[#0B2545]/20 text-[#0B2545] rounded-lg">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <span className="text-[10px] bg-slate-200 px-2 py-0.5 rounded text-slate-600 font-bold uppercase">Anual</span>
-              </div>
-              <h3 className="text-sm font-bold text-slate-800 mt-3 flex items-center gap-1.5">
-                Facturación Electrónica
-                {tipoPlan === "facturacion" && <span className="w-1.5 h-1.5 rounded-full bg-[#0B2545] animate-ping"></span>}
-              </h3>
-            </button>
+        {/* 4 Artes Oficiales para Plan Contadores (En la misma línea horizontal) */}
+        {tipoPlan === "contador" && (
+          <div className="mt-6 mb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {ARTES_CONTADOR.map((item) => {
+                const fileUrl = `/artes/${encodeURIComponent(item.filename)}`;
+                return (
+                  <div
+                    key={item.id}
+                    className="p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs hover:shadow-sm transition-all flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        onClick={() => setPreviewArteModal({ planName: item.nombre, filename: item.filename })}
+                        className="w-14 h-18 rounded-xl overflow-hidden border border-amber-300 shadow-2xs bg-slate-100 shrink-0 relative group cursor-pointer"
+                        title="Haz clic para previsualizar"
+                      >
+                        <img
+                          src={fileUrl}
+                          alt={item.nombre}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        />
+                        <div className="absolute inset-0 bg-slate-950/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                          <Eye className="w-4 h-4 text-white drop-shadow" />
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded shadow-2xs">
+                          Arte Oficial
+                        </span>
+                        <h4 className="text-xs sm:text-sm font-black text-slate-900 truncate mt-1">
+                          {item.nombre}
+                        </h4>
+                      </div>
+                    </div>
 
-            {/* ERP Tab */}
-            <button
-              onClick={() => setTipoPlan("erp")}
-              className={`p-4 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden group ${
-                tipoPlan === "erp"
-                  ? "bg-blue-50/60 border-[#0B2545] shadow-sm"
-                  : "bg-slate-50 border-slate-200 hover:border-slate-300 hover:bg-slate-100/50"
-              }`}
-            >
-              <div className="flex justify-between items-start">
-                <div className="p-2 bg-[#0B2545]/10 border border-[#0B2545]/20 text-[#0B2545] rounded-lg">
-                  <Database className="w-5 h-5" />
-                </div>
-                <span className="text-[10px] bg-slate-200 px-2 py-0.5 rounded text-slate-600 font-bold uppercase">Full Control</span>
-              </div>
-              <h3 className="text-sm font-bold text-slate-800 mt-3 flex items-center gap-1.5">
-                ERP Administrativo Completo
-                {tipoPlan === "erp" && <span className="w-1.5 h-1.5 rounded-full bg-[#0B2545] animate-ping"></span>}
-              </h3>
-            </button>
-
-            {/* Contador Tab */}
-            <button
-              onClick={() => setTipoPlan("contador")}
-              className={`p-4 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden group ${
-                tipoPlan === "contador"
-                  ? "bg-blue-50/60 border-[#0B2545] shadow-sm"
-                  : "bg-slate-50 border-slate-200 hover:border-slate-300 hover:bg-slate-100/50"
-              }`}
-            >
-              <div className="flex justify-between items-start">
-                <div className="p-2 bg-[#0B2545]/10 border border-[#0B2545]/20 text-[#0B2545] rounded-lg">
-                  <Users className="w-5 h-5" />
-                </div>
-                <span className="text-[10px] bg-slate-200 px-2 py-0.5 rounded text-slate-600 font-bold uppercase">Anual Multi-RUC</span>
-              </div>
-              <h3 className="text-sm font-bold text-slate-800 mt-3 flex items-center gap-1.5">
-                Planes para Contadores
-                {tipoPlan === "contador" && <span className="w-1.5 h-1.5 rounded-full bg-[#0B2545] animate-ping"></span>}
-              </h3>
-            </button>
-
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(fileUrl);
+                          const blob = await response.blob();
+                          const blobUrl = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = blobUrl;
+                          a.download = item.filename;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+                        } catch {
+                          window.open(fileUrl, "_blank");
+                        }
+                      }}
+                      className="p-2 sm:px-3 sm:py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-2xs hover:shadow transition-all cursor-pointer shrink-0 active:scale-95"
+                      title={`Descargar ${item.filename}`}
+                    >
+                      <Download className="w-3.5 h-3.5 text-slate-950" />
+                      <span className="hidden sm:inline">Descargar</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </section>
+        )}
 
         {/* Catalog & Explorer Split View */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -2811,11 +3268,19 @@ export default function App() {
                             {p.nombre}
                             {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-[#0B2545]" />}
                           </h4>
-                          {(tipoPlan === "facturacion" || tipoPlan === "contador") && (
-                            <span className="inline-block text-[9px] bg-blue-50 text-blue-900 font-extrabold px-1.5 py-0.5 rounded mt-1 border border-blue-200">
-                              Pago Anual
-                            </span>
-                          )}
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            {(tipoPlan === "facturacion" || tipoPlan === "contador") && (
+                              <span className="inline-block text-[9px] bg-blue-50 text-blue-900 font-extrabold px-1.5 py-0.5 rounded border border-blue-200">
+                                Pago Anual
+                              </span>
+                            )}
+                            {getArteFilenameForPlan(p.nombre) && (
+                              <span className="inline-flex items-center gap-1 text-[9px] bg-amber-50 text-amber-900 font-bold px-1.5 py-0.5 rounded border border-amber-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                Arte Oficial
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="text-right flex items-baseline gap-1 shrink-0">
                           <span className="text-sm font-extrabold text-slate-900">
@@ -2926,6 +3391,55 @@ export default function App() {
                     </div>
                   </div>
                 )}
+
+                {/* Arte Comercial Oficial del Plan */}
+                {(() => {
+                  const arteFilename = getArteFilenameForPlan(viewedPlanObj.nombre);
+                  if (!arteFilename) return null;
+                  const arteUrl = `/artes/${encodeURIComponent(arteFilename)}`;
+
+                  return (
+                    <div className="p-4 sm:p-5 border-b border-slate-200 bg-gradient-to-r from-amber-50/70 via-orange-50/40 to-slate-50">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3.5">
+                          <div
+                            onClick={() => setPreviewArteModal({ planName: viewedPlanObj.nombre, filename: arteFilename })}
+                            className="w-16 h-20 rounded-xl overflow-hidden border border-amber-300 shadow-sm bg-white shrink-0 relative group cursor-pointer"
+                            title="Haz clic para ver en tamaño completo"
+                          >
+                            <img
+                              src={arteUrl}
+                              alt={`Arte publicitario ${viewedPlanObj.nombre}`}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                            />
+                            <div className="absolute inset-0 bg-slate-950/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <Eye className="w-5 h-5 text-white drop-shadow" />
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2 py-0.5 rounded-md shadow-2xs">
+                              Arte Comercial Oficial
+                            </span>
+                            <h5 className="text-sm font-bold text-slate-900 mt-1">
+                              Flyer Publicitario de {viewedPlanObj.nombre}
+                            </h5>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadArte(viewedPlanObj)}
+                            className="flex-1 sm:flex-initial px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-2xs hover:shadow transition-all cursor-pointer active:scale-95"
+                          >
+                            <Download className="w-3.5 h-3.5 text-slate-950" />
+                            <span>Descargar</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Technical stats blocks */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-6 border-b border-slate-200">
@@ -3124,6 +3638,8 @@ export default function App() {
             </table>
           </div>
         </section>
+              </>
+            )}
 
         {/* ==================================== TABS: PLAN END ==================================== */}
           </div>

@@ -7,7 +7,6 @@ import {
   Check, 
   ExternalLink, 
   Bot, 
-  Layers, 
   FileCheck, 
   Sliders, 
   Plus, 
@@ -33,122 +32,52 @@ import {
   ArrowRight,
   MessageSquare,
   Send,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Eye,
+  X
 } from "lucide-react";
-import { PLANES_DATA } from "../data";
 import html2canvas from "html2canvas";
 import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
+import { ImageZoomLightbox } from "./ImageZoomLightbox";
+
+export interface ArtePlanItem {
+  id: number;
+  name: string;
+  file: string;
+  categoria: "facturacion" | "erp" | "contador";
+  desc: string;
+}
+
+const ARTES_OFICIALES_PLANES: ArtePlanItem[] = [
+  // Facturación Electrónica (8)
+  { id: 1, name: "UP LIGHT", file: "1. LIGHT.png", categoria: "facturacion", desc: "Plan de entrada para microempresas y facturación ligera con 300 comprobantes." },
+  { id: 2, name: "UP BASE", file: "2. BASE.png", categoria: "facturacion", desc: "Comprobantes esenciales con soporte de catálogo, proformas y retenciones." },
+  { id: 3, name: "UP POWER", file: "3. POWER.png", categoria: "facturacion", desc: "Excelente para negocios en crecimiento con control de inventario y compras." },
+  { id: 4, name: "UP INICIAL", file: "4. INICIAL.png", categoria: "facturacion", desc: "Gestión completa para PYMEs con múltiples usuarios y emisión ágil." },
+  { id: 5, name: "UP INTERMEDIO", file: "5. INTERMEDIO.png", categoria: "facturacion", desc: "Gestión comercial avanzada con reportes analíticos y múltiples cajas." },
+  { id: 6, name: "UP IDEAL PLUS", file: "6. IDEAL.png", categoria: "facturacion", desc: "Capacidad extendida para empresas con alta rotación y múltiples sucursales." },
+  { id: 7, name: "UP PROFESIONAL PLUS", file: "7. PROFESSIONAL.png", categoria: "facturacion", desc: "Máxima potencia operativa para medianas y grandes operaciones comerciales." },
+  { id: 8, name: "UP ULTRA", file: "8. ULTRA.png", categoria: "facturacion", desc: "Solución corporativa ilimitada para empresas de alto volumen transaccional." },
+
+  // Sistemas ERP Cloud (3)
+  { id: 9, name: "ERP START", file: "start.png", categoria: "erp", desc: "Solución integral para PYMEs: 2.000 comprobantes, usuarios ilimitados, contabilidad y nómina." },
+  { id: 10, name: "ERP PLUS", file: "plus.png", categoria: "erp", desc: "Comprobantes ilimitados, punto de venta TPV, restaurantes, activos fijos y WooCommerce." },
+  { id: 11, name: "ERP PREMIUM", file: "premiun.png", categoria: "erp", desc: "Multiempresa hasta 3 RUCs, ilimitado total, módulo de continuidad operativa y soporte VIP." },
+
+  // Planes para Contadores (4)
+  { id: 12, name: "COM FUN ILIMITADO", file: "COM FUN LIMITADO.png", categoria: "contador", desc: "Comprobantes y funcionalidades ilimitadas para sistemas y firmas electrónicas." },
+  { id: 13, name: "Plan Contador Ilimitado", file: "Plan-Contador-Ilimitado.png", categoria: "contador", desc: "Empresas y comprobantes 100% ilimitados para firmas y estudios contables." },
+  { id: 14, name: "Plan Contador Segmentado", file: "Plan-Contador-Segmentado.png", categoria: "contador", desc: "Especial para contadores independientes con carteras de 1, 3, 6 y 10 empresas." },
+  { id: 15, name: "Plan Contador TAX", file: "Plan-Contador-TAX.png", categoria: "contador", desc: "Solución exclusiva para declaración tributaria SRI y anexos masivos." }
+];
 
 export function ArteVisualModule() {
-  // Main Sub-Tab inside Arte Visual: "sistemas" | "firmas" | "ia"
-  const [subTab, setSubTab] = useState<"sistemas" | "firmas" | "ia">("sistemas");
-
-  // ==========================================
-  // STATE FOR SISTEMAS (FLYER 1)
-  // ==========================================
-  const [sistemasLogo, setSistemasLogo] = useState<string>("");
-  const [planSelectionMode, setPlanSelectionMode] = useState<"individual" | "multiple">("individual");
-  const [selectedCategory, setSelectedCategory] = useState<"facturacion" | "erp" | "contador">("facturacion");
-  const [selectedPlanIndex, setSelectedPlanIndex] = useState<number>(3); // UP INICIAL default
-  const [taxMode, setTaxMode] = useState<"sin_iva" | "con_iva">("sin_iva");
-
-  // Custom Plan Fields (Editable)
-  const currentPlanData = PLANES_DATA[selectedCategory][selectedPlanIndex] || PLANES_DATA.facturacion[0];
-  const [customPlanName, setCustomPlanName] = useState<string>(currentPlanData.nombre.replace("UP ", ""));
-  const initialPrice = selectedCategory === "erp" ? (currentPlanData.precioAnual || currentPlanData.precio * 12) : currentPlanData.precio;
-  const [customPrice, setCustomPrice] = useState<number>(initialPrice);
-  const [customPeriodText, setCustomPeriodText] = useState<string>("PRECIO ANUAL");
-  const [customPromoText, setCustomPromoText] = useState<string>("Promociones del mes");
-  
-  // Customizable Modules List
-  const [customModules, setCustomModules] = useState<string[]>([
-    "Facturación electrónica",
-    "Retenciones",
-    "Notas de crédito y débito",
-    "Proformas",
-    "Compras",
-    "Dashboard gerencial",
-    "Inventario multibodega",
-    "Órdenes de compra",
-    "Impuestos (ATS, formularios 103 y 104)"
-  ]);
-  const [newModuleInput, setNewModuleInput] = useState<string>("");
-
-  // Key Metrics
-  const [metricComprobantes, setMetricComprobantes] = useState<string>(currentPlanData.modulos.find(m => m.includes("Comprobantes")) || "20 Comprobantes");
-  const [metricUsuarios, setMetricUsuarios] = useState<string>(currentPlanData.modulos.find(m => m.includes("Usuario")) || "1 Usuario");
-  const [metricSoporte, setMetricSoporte] = useState<string>("Soporte incluido.");
-  const [metricCapacitacion, setMetricCapacitacion] = useState<string>("Capacitación gratuita.");
-  const [metricApp, setMetricApp] = useState<string>("App móvil");
-
-  // Multi-Plan list for "Múltiple" mode
-  const [multiplePlansList, setMultiplePlansList] = useState<Array<{ name: string; price: number; period: string; category: string }>>([
-    { name: "UP INICIAL", price: 10.00, period: "DESDE $10 + IVA ANUAL", category: "Facturación" },
-    { name: "UP BASE", price: 25.00, period: "DESDE $25 + IVA ANUAL", category: "Facturación" },
-    { name: "ERP START", price: 411.76, period: "DESDE $411.76 + IVA ANUAL", category: "ERP" }
-  ]);
-
-  // Handle plan dropdown switch
-  const handleSelectPlan = (idx: number) => {
-    setSelectedPlanIndex(idx);
-    const plan = PLANES_DATA[selectedCategory][idx];
-    if (plan) {
-      setCustomPlanName(plan.nombre.replace("UP ", ""));
-      // Reflect annual price for ERP plans
-      const price = selectedCategory === "erp" ? (plan.precioAnual || plan.precio * 12) : plan.precio;
-      setCustomPrice(price);
-      if (selectedCategory === "erp") {
-        setCustomPeriodText("PRECIO ANUAL");
-      }
-      
-      const comp = plan.modulos.find(m => m.includes("Comprobantes")) || "100 Comprobantes";
-      const usr = plan.modulos.find(m => m.includes("Usuario")) || "1 Usuario";
-      setMetricComprobantes(comp);
-      setMetricUsuarios(usr);
-
-      // Reload all modules when selecting a new plan
-      if (plan.modulos && plan.modulos.length > 0) {
-        setCustomModules([...plan.modulos]);
-      }
-    }
-  };
-
-  // Upload Logo Handler for Sistemas
-  const handleLogoUploadSistemas = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (uploadEvent) => {
-        setSistemasLogo(uploadEvent.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Add Custom Module Item
-  const handleAddCustomModule = () => {
-    if (newModuleInput.trim()) {
-      setCustomModules([...customModules, newModuleInput.trim()]);
-      setNewModuleInput("");
-    }
-  };
-
-  // Remove Custom Module Item
-  const handleRemoveCustomModule = (idx: number) => {
-    setCustomModules(customModules.filter((_, i) => i !== idx));
-  };
-
-  // Add Plan to Multiple List
-  const handleAddMultiplePlan = () => {
-    setMultiplePlansList([
-      ...multiplePlansList,
-      { name: `PLAN ${multiplePlansList.length + 1}`, price: 15.00, period: "ANUAL", category: "Facturación" }
-    ]);
-  };
-
-  // Export Sistemas Flyer
-  const [exportingSistemas, setExportingSistemas] = useState<boolean>(false);
+  // Main Sub-Tab inside Arte Visual: "firmas" | "ia" | "planes"
+  const [subTab, setSubTab] = useState<"firmas" | "ia" | "planes">("planes");
+  const [activeModalImg, setActiveModalImg] = useState<{ title: string; filename: string } | null>(null);
+  const [copiedLinkIndex, setCopiedLinkIndex] = useState<number | null>(null);
+  const [filterCategory, setFilterCategory] = useState<"facturacion" | "erp" | "contador">("facturacion");
 
   // Helper function to sanitize cloned document for html2canvas to fix oklab/oklch errors in Tailwind v4
   const sanitizeClonedDocForHtml2Canvas = (clonedDoc: Document, targetId: string) => {
@@ -299,55 +228,6 @@ export function ArteVisualModule() {
       s.style.textDecoration = "line-through";
       s.style.textDecorationColor = "#f43f5e";
     });
-  };
-
-  const handleExportSistemas = async () => {
-    setExportingSistemas(true);
-    const elem = document.getElementById("flyer-sistemas-canvas");
-    if (!elem) {
-      setExportingSistemas(false);
-      return;
-    }
-
-    try {
-      // Use toPng from html-to-image to capture exact DOM preview pixel-for-pixel
-      const dataUrl = await toPng(elem, {
-        quality: 1,
-        pixelRatio: 3,
-        cacheBust: true,
-        backgroundColor: "#FAF9F6",
-      });
-
-      const link = document.createElement("a");
-      link.download = `Arte_Visual_Plan_${(customPlanName || "Sistemas").replace(/\s+/g, "_")}.png`;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error("Export error with toPng, falling back to html2canvas:", error);
-      try {
-        const canvas = await html2canvas(elem, {
-          scale: 3,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: "#FAF9F6",
-          logging: false,
-          onclone: (clonedDoc) => sanitizeClonedDocForHtml2Canvas(clonedDoc, "flyer-sistemas-canvas")
-        });
-
-        const link = document.createElement("a");
-        link.download = `Arte_Visual_Plan_${(customPlanName || "Sistemas").replace(/\s+/g, "_")}.png`;
-        link.href = canvas.toDataURL("image/png");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (err2) {
-        alert("No se pudo descargar la imagen PNG. Inténtalo de nuevo.");
-      }
-    } finally {
-      setExportingSistemas(false);
-    }
   };
 
   // ==========================================
@@ -531,92 +411,92 @@ Con nuestro Sistema de Facturación y ERP Empresarial obtienes:
       {/* HIGHLY VISIBLE SUB-TAB SELECTOR NAVIGATION BAR */}
       {/* ==================================================================================== */}
       <div className="bg-slate-900 p-2 sm:p-2.5 rounded-2xl border-2 border-slate-800 shadow-xl">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5">
           
-          {/* TAB 1: SISTEMAS */}
+          {/* TAB 1: ARTES OFICIALES POR PLAN */}
           <button
-            onClick={() => setSubTab("sistemas")}
-            className={`group relative p-3.5 sm:p-4 rounded-xl text-left transition-all duration-200 cursor-pointer flex items-center justify-between ${
-              subTab === "sistemas"
-                ? "bg-gradient-to-r from-[#1E293B] to-[#3B51A3] text-white border-2 border-amber-400/90 shadow-lg ring-2 ring-amber-400/20"
+            onClick={() => setSubTab("planes")}
+            className={`group relative p-3.5 rounded-xl text-left transition-all duration-200 cursor-pointer flex items-center justify-between ${
+              subTab === "planes"
+                ? "bg-gradient-to-r from-amber-500/20 via-slate-800 to-slate-900 text-white border-2 border-amber-400 shadow-lg ring-2 ring-amber-400/20"
                 : "bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-700/70"
             }`}
           >
-            <div className="flex items-center gap-3">
-              <div className={`p-2.5 rounded-xl transition-colors ${
-                subTab === "sistemas" ? "bg-amber-400 text-slate-950 font-black" : "bg-slate-700/70 text-amber-300"
+            <div className="flex items-center gap-2.5">
+              <div className={`p-2.5 rounded-xl transition-colors shrink-0 ${
+                subTab === "planes" ? "bg-amber-400 text-slate-950 font-black" : "bg-slate-700/70 text-amber-300"
               }`}>
-                <Layers className="w-5 h-5 sm:w-6 sm:h-6" />
+                <ImageIcon className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-300/90 block">
-                  Volante Gráfico 1
+                <span className="text-[9.5px] font-black uppercase tracking-wider text-amber-300 block">
+                  15 Artes por Plan
                 </span>
-                <span className="text-sm sm:text-base font-black tracking-tight block">
-                  1. Sistemas &amp; ERP
+                <span className="text-xs sm:text-sm font-black tracking-tight block text-white">
+                  1. Artes por Plan
                 </span>
               </div>
             </div>
-            {subTab === "sistemas" && (
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_#F59E0B]" />
+            {subTab === "planes" && (
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_#F59E0B] shrink-0 ml-1" />
             )}
           </button>
 
-          {/* TAB 2: FIRMAS */}
+          {/* TAB 2: FIRMAS (ANTERIOR 3) */}
           <button
             onClick={() => setSubTab("firmas")}
-            className={`group relative p-3.5 sm:p-4 rounded-xl text-left transition-all duration-200 cursor-pointer flex items-center justify-between ${
+            className={`group relative p-3.5 rounded-xl text-left transition-all duration-200 cursor-pointer flex items-center justify-between ${
               subTab === "firmas"
-                ? "bg-gradient-to-r from-[#1E293B] to-[#3B51A3] text-white border-2 border-amber-400/90 shadow-lg ring-2 ring-amber-400/20"
+                ? "bg-gradient-to-r from-[#1E293B] to-emerald-900 text-white border-2 border-emerald-400 shadow-lg ring-2 ring-emerald-400/20"
                 : "bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-700/70"
             }`}
           >
-            <div className="flex items-center gap-3">
-              <div className={`p-2.5 rounded-xl transition-colors ${
-                subTab === "firmas" ? "bg-amber-400 text-slate-950 font-black" : "bg-slate-700/70 text-amber-300"
+            <div className="flex items-center gap-2.5">
+              <div className={`p-2.5 rounded-xl transition-colors shrink-0 ${
+                subTab === "firmas" ? "bg-emerald-400 text-slate-950 font-black" : "bg-slate-700/70 text-emerald-300"
               }`}>
-                <FileCheck className="w-5 h-5 sm:w-6 sm:h-6" />
+                <FileCheck className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-300/90 block">
-                  Volante Gráfico 2
+                <span className="text-[9.5px] font-black uppercase tracking-wider text-emerald-300 block">
+                  Volante General
                 </span>
-                <span className="text-sm sm:text-base font-black tracking-tight block">
+                <span className="text-xs sm:text-sm font-black tracking-tight block text-white">
                   2. Firmas Electrónicas
                 </span>
               </div>
             </div>
             {subTab === "firmas" && (
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_#F59E0B]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34D399] shrink-0 ml-1" />
             )}
           </button>
 
-          {/* TAB 3: INTELIGENCIA ARTIFICIAL */}
+          {/* TAB 3: INTELIGENCIA ARTIFICIAL (ANTERIOR 4) */}
           <button
             onClick={() => setSubTab("ia")}
-            className={`group relative p-3.5 sm:p-4 rounded-xl text-left transition-all duration-200 cursor-pointer flex items-center justify-between ${
+            className={`group relative p-3.5 rounded-xl text-left transition-all duration-200 cursor-pointer flex items-center justify-between ${
               subTab === "ia"
                 ? "bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white border-2 border-purple-400 shadow-lg ring-2 ring-purple-400/30"
                 : "bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-700/70"
             }`}
           >
-            <div className="flex items-center gap-3">
-              <div className={`p-2.5 rounded-xl transition-colors ${
+            <div className="flex items-center gap-2.5">
+              <div className={`p-2.5 rounded-xl transition-colors shrink-0 ${
                 subTab === "ia" ? "bg-purple-500 text-white font-black" : "bg-purple-900/60 text-purple-300"
               }`}>
-                <Bot className="w-5 h-5 sm:w-6 sm:h-6" />
+                <Bot className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-purple-300 block">
-                  Generador &amp; Navegador
+                <span className="text-[9.5px] font-black uppercase tracking-wider text-purple-300 block">
+                  Generador Prompts
                 </span>
-                <span className="text-sm sm:text-base font-black tracking-tight block">
-                  3. Inteligencia Artificial (Gemini)
+                <span className="text-xs sm:text-sm font-black tracking-tight block text-white">
+                  3. Inteligencia Artificial
                 </span>
               </div>
             </div>
             {subTab === "ia" && (
-              <span className="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_8px_#A855F7]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_8px_#A855F7] shrink-0 ml-1" />
             )}
           </button>
 
@@ -624,605 +504,184 @@ Con nuestro Sistema de Facturación y ERP Empresarial obtienes:
       </div>
 
       {/* ==================================================================================== */}
-      {/* SUB-TAB 1: SISTEMAS (FLYER ART) */}
+      {/* SUB-TAB 0: ARTES OFICIALES POR PLAN (DIRECTO SIN BANNER) */}
       {/* ==================================================================================== */}
-      {subTab === "sistemas" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
-          {/* Controls Editor Sidebar (Left) */}
-          <div className="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-5">
-            <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-              <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                <Sliders className="w-5 h-5 text-[#3B51A3]" />
-                <span>Configurar Volante de Sistemas</span>
-              </h2>
-              <span className="text-[11px] font-bold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-md">
-                Formato Personalizable
-              </span>
-            </div>
+      {subTab === "planes" && (() => {
+        const visiblePlans = ARTES_OFICIALES_PLANES.filter((p) => p.categoria === filterCategory);
 
-            {/* 1. Custom Logo Upload */}
-            <div className="space-y-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
-              <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                <span>Logo de la Empresa / Distribuidor</span>
-                {sistemasLogo && (
-                  <button 
-                    onClick={() => setSistemasLogo("")} 
-                    className="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer"
-                  >
-                    Quitar Logo
-                  </button>
-                )}
-              </label>
-              <div className="flex items-center gap-3">
-                {sistemasLogo ? (
-                  <div className="h-12 w-20 rounded-lg border border-slate-300 p-1 bg-white flex items-center justify-center shrink-0">
-                    <img src={sistemasLogo} alt="Logo Preview" className="max-h-full max-w-full object-contain" />
-                  </div>
-                ) : (
-                  <div className="h-12 w-20 rounded-lg border border-dashed border-slate-300 bg-white flex items-center justify-center text-slate-400 shrink-0">
-                    <Upload className="w-5 h-5 text-[#3B51A3]" />
-                  </div>
-                )}
-                <label className="flex-1 cursor-pointer">
-                  <span className="inline-block py-2 px-3 rounded-lg text-xs font-extrabold bg-[#3B51A3] hover:bg-[#2E3E85] text-white transition-all shadow-xs text-center w-full">
-                    {sistemasLogo ? "Cambiar Logo" : "Subir Logo Propio"}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUploadSistemas}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-              <p className="text-[10px] text-slate-500 font-medium">
-                Sube tu propio logo transparente en PNG o JPEG para personalizar el arte gráfico.
-              </p>
-            </div>
-
-            {/* 2. Selection Mode: Individual vs Multiple */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700">Modo de Selección de Planes:</label>
-              <div className="grid grid-cols-2 gap-2">
+        return (
+          <div className="space-y-4">
+            {/* Category Quick Switcher Pills */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <button
-                  onClick={() => setPlanSelectionMode("individual")}
-                  className={`py-2 px-3 rounded-xl text-xs font-extrabold border transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                    planSelectionMode === "individual"
-                      ? "bg-[#3B51A3] text-white border-[#3B51A3] shadow-xs"
-                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                  type="button"
+                  onClick={() => setFilterCategory("facturacion")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    filterCategory === "facturacion"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >
-                  <User className="w-4 h-4" />
-                  <span>Plan Individual</span>
+                  Facturación Electrónica ({ARTES_OFICIALES_PLANES.filter((p) => p.categoria === "facturacion").length})
                 </button>
                 <button
-                  onClick={() => setPlanSelectionMode("multiple")}
-                  className={`py-2 px-3 rounded-xl text-xs font-extrabold border transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                    planSelectionMode === "multiple"
-                      ? "bg-[#3B51A3] text-white border-[#3B51A3] shadow-xs"
-                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                  type="button"
+                  onClick={() => setFilterCategory("erp")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    filterCategory === "erp"
+                      ? "bg-amber-600 text-white shadow-xs"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >
-                  <Users className="w-4 h-4" />
-                  <span>Planes Múltiples</span>
+                  Sistemas ERP ({ARTES_OFICIALES_PLANES.filter((p) => p.categoria === "erp").length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterCategory("contador")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    filterCategory === "contador"
+                      ? "bg-purple-600 text-white shadow-xs"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  Planes Contadores ({ARTES_OFICIALES_PLANES.filter((p) => p.categoria === "contador").length})
                 </button>
               </div>
+
+              <div className="text-xs text-slate-500 font-medium px-1">
+                Total: <strong className="text-slate-900">{visiblePlans.length}</strong> artes oficiales
+              </div>
             </div>
 
-            {/* INDIVIDUAL PLAN EDIT CONTROLS */}
-            {planSelectionMode === "individual" ? (
-              <div className="space-y-4">
-                
-                {/* Category & Plan Preset */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-600 mb-1 block">Categoría:</label>
-                    <select
-                      value={selectedCategory}
-                      onChange={(e) => {
-                        const cat = e.target.value as any;
-                        setSelectedCategory(cat);
-                        setSelectedPlanIndex(0);
-                        const p = PLANES_DATA[cat][0];
-                        if (p) {
-                          setCustomPlanName(p.nombre.replace("UP ", ""));
-                          const price = cat === "erp" ? (p.precioAnual || p.precio * 12) : p.precio;
-                          setCustomPrice(price);
-                          if (p.modulos) {
-                            setCustomModules([...p.modulos]);
-                          }
-                        }
-                      }}
-                      className="w-full text-xs font-bold border border-slate-200 rounded-lg p-2 bg-slate-50 text-slate-800 cursor-pointer"
-                    >
-                      <option value="facturacion">Facturación Electrónica</option>
-                      <option value="erp">ERP Empresarial</option>
-                      <option value="contador">Especial Contador</option>
-                    </select>
-                  </div>
+            {/* Grid of Plans */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {visiblePlans.map((plan, idx) => {
+                const fileUrl = `/artes/${encodeURIComponent(plan.file)}`;
+                const isCopied = copiedLinkIndex === idx;
 
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-600 mb-1 block">Plan Predefinido:</label>
-                    <select
-                      value={selectedPlanIndex}
-                      onChange={(e) => handleSelectPlan(Number(e.target.value))}
-                      className="w-full text-xs font-bold border border-slate-200 rounded-lg p-2 bg-slate-50 text-slate-800 cursor-pointer"
-                    >
-                      {PLANES_DATA[selectedCategory].map((p, idx) => (
-                        <option key={idx} value={idx}>
-                          {p.nombre} (${p.precio})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+                const handleDownloadSingle = async () => {
+                  try {
+                    const res = await fetch(fileUrl);
+                    const blob = await res.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = blobUrl;
+                    a.download = plan.file;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+                  } catch {
+                    window.open(fileUrl, "_blank");
+                  }
+                };
 
-                {/* Name & Custom Price */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-600 mb-1 block">Nombre en el Arte:</label>
-                    <input
-                      type="text"
-                      value={customPlanName}
-                      onChange={(e) => setCustomPlanName(e.target.value)}
-                      className="w-full text-xs font-bold border border-slate-200 rounded-lg p-2 bg-white text-slate-900"
-                      placeholder="Ej: INICIAL"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-600 mb-1 block">Precio Modificable ($):</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={customPrice}
-                      onChange={(e) => setCustomPrice(Number(e.target.value))}
-                      className="w-full text-xs font-bold border border-slate-200 rounded-lg p-2 bg-white text-slate-900"
-                    />
-                  </div>
-                </div>
+                const handleCopyLink = () => {
+                  const fullUrl = `${window.location.origin}${fileUrl}`;
+                  navigator.clipboard.writeText(fullUrl);
+                  setCopiedLinkIndex(idx);
+                  setTimeout(() => setCopiedLinkIndex(null), 2000);
+                };
 
-                {/* Period & Promo Text & Tax Mode */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-600 mb-1 block">Frecuencia / Periodo:</label>
-                    <input
-                      type="text"
-                      value={customPeriodText}
-                      onChange={(e) => setCustomPeriodText(e.target.value)}
-                      className="w-full text-xs font-medium border border-slate-200 rounded-lg p-2 bg-white text-slate-800"
-                      placeholder="Ej: PRECIO ANUAL"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-600 mb-1 block">Texto Promocional:</label>
-                    <input
-                      type="text"
-                      value={customPromoText}
-                      onChange={(e) => setCustomPromoText(e.target.value)}
-                      className="w-full text-xs font-medium border border-slate-200 rounded-lg p-2 bg-white text-slate-800"
-                    />
-                  </div>
-                </div>
-
-                {/* Tax Option Selector (Con IVA / Sin IVA) */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
-                    <span>Personalización de Impuestos (IVA):</span>
-                    <span className="text-[10px] text-[#FF6B00] font-black">
-                      {taxMode === "con_iva" ? "Total +15% IVA" : "Valor Neto"}
-                    </span>
-                  </label>
-                  <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                    <button
-                      type="button"
-                      onClick={() => setTaxMode("sin_iva")}
-                      className={`py-1.5 px-3 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                        taxMode === "sin_iva"
-                          ? "bg-slate-800 text-white shadow-xs"
-                          : "text-slate-600 hover:text-slate-900"
-                      }`}
-                    >
-                      Sin IVA (${customPrice.toFixed(2)})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setTaxMode("con_iva")}
-                      className={`py-1.5 px-3 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                        taxMode === "con_iva"
-                          ? "bg-[#3B51A3] text-white shadow-xs"
-                          : "text-slate-600 hover:text-slate-900"
-                      }`}
-                    >
-                      Con IVA (+15% = ${(customPrice * 1.15).toFixed(2)})
-                    </button>
-                  </div>
-                </div>
-
-                {/* Key Metrics Customization */}
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-2">
-                  <span className="text-xs font-extrabold text-slate-700 block">Métricas Destacadas (Columna Derecha):</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      value={metricComprobantes}
-                      onChange={(e) => setMetricComprobantes(e.target.value)}
-                      className="text-xs border border-slate-200 rounded-lg p-1.5 bg-white font-medium"
-                      placeholder="Comprobantes"
-                    />
-                    <input
-                      type="text"
-                      value={metricUsuarios}
-                      onChange={(e) => setMetricUsuarios(e.target.value)}
-                      className="text-xs border border-slate-200 rounded-lg p-1.5 bg-white font-medium"
-                      placeholder="Usuarios"
-                    />
-                    <input
-                      type="text"
-                      value={metricSoporte}
-                      onChange={(e) => setMetricSoporte(e.target.value)}
-                      className="text-xs border border-slate-200 rounded-lg p-1.5 bg-white font-medium"
-                      placeholder="Soporte"
-                    />
-                    <input
-                      type="text"
-                      value={metricCapacitacion}
-                      onChange={(e) => setMetricCapacitacion(e.target.value)}
-                      className="text-xs border border-slate-200 rounded-lg p-1.5 bg-white font-medium"
-                      placeholder="Capacitación"
-                    />
-                  </div>
-                </div>
-
-                {/* Modules Editor */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-extrabold text-slate-700">Módulos Principales (Lista):</label>
-                    <span className="text-[10px] text-slate-500 font-bold">{customModules.length} módulos</span>
-                  </div>
-                  
-                  <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 border border-slate-200 rounded-xl p-2 bg-slate-50">
-                    {customModules.map((mod, idx) => (
-                      <div key={idx} className="flex items-center justify-between gap-2 bg-white p-1.5 rounded-lg border border-slate-200 text-xs text-slate-800">
-                        <span className="truncate font-medium">{mod}</span>
-                        <button
-                          onClick={() => handleRemoveCustomModule(idx)}
-                          className="text-rose-500 hover:text-rose-700 p-0.5 cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Add module input */}
-                  <div className="flex items-center gap-2 pt-1">
-                    <input
-                      type="text"
-                      value={newModuleInput}
-                      onChange={(e) => setNewModuleInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleAddCustomModule()}
-                      placeholder="Agregar nuevo módulo..."
-                      className="flex-1 text-xs border border-slate-200 rounded-lg p-2 bg-white"
-                    />
-                    <button
-                      onClick={handleAddCustomModule}
-                      className="bg-[#3B51A3] hover:bg-[#2E3E85] text-white p-2 rounded-lg cursor-pointer"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            ) : (
-              /* MULTIPLE PLAN SELECTION MODE */
-              <div className="space-y-4">
-                <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 text-xs text-amber-900 font-medium">
-                  El modo Múltiple genera una tabla comparativa de tus planes seleccionados en un solo volante.
-                </div>
-
-                <div className="space-y-2">
-                  {multiplePlansList.map((pItem, pIdx) => (
-                    <div key={pIdx} className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-800">Plan #{pIdx + 1}</span>
-                        <button
-                          onClick={() => setMultiplePlansList(multiplePlansList.filter((_, i) => i !== pIdx))}
-                          className="text-rose-600 hover:underline text-xs font-bold cursor-pointer"
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          value={pItem.name}
-                          onChange={(e) => {
-                            const copy = [...multiplePlansList];
-                            copy[pIdx].name = e.target.value;
-                            setMultiplePlansList(copy);
-                          }}
-                          className="text-xs border border-slate-200 rounded-lg p-1.5 bg-white font-bold"
-                          placeholder="Nombre del Plan"
-                        />
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={pItem.price}
-                          onChange={(e) => {
-                            const copy = [...multiplePlansList];
-                            copy[pIdx].price = Number(e.target.value);
-                            setMultiplePlansList(copy);
-                          }}
-                          className="text-xs border border-slate-200 rounded-lg p-1.5 bg-white font-bold"
-                          placeholder="Precio"
-                        />
-                      </div>
-                    </div>
-                  ))}
-
-                  <button
-                    onClick={handleAddMultiplePlan}
-                    className="w-full py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+                return (
+                  <div
+                    key={plan.id}
+                    className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200 flex flex-col group"
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>Agregar Otro Plan a la Comparativa</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Export Buttons */}
-            <div className="pt-3 border-t border-slate-100 flex items-center">
-              <button
-                onClick={() => handleExportSistemas()}
-                disabled={exportingSistemas}
-                className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-extrabold shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                <Download className="w-4 h-4" />
-                <span>{exportingSistemas ? "Generando Imagen PNG..." : "Descargar Imagen PNG (Alta Resolución)"}</span>
-              </button>
-            </div>
-
-          </div>
-
-          {/* Canvas Preview Area (Right) */}
-          <div className="lg:col-span-7 flex flex-col items-center justify-center">
-            
-            <div className="mb-2 text-center">
-              <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
-                Previsualización en Tiempo Real (Formato Sistemas &amp; ERP)
-              </span>
-            </div>
-
-            {/* THE CANVAS CONTAINER */}
-            <div
-              id="flyer-sistemas-canvas"
-              className="w-full max-w-[620px] bg-[#FAF9F6] p-6 sm:p-8 rounded-[28px] border-2 border-slate-200 shadow-2xl relative overflow-hidden text-slate-900 font-sans select-none flex flex-col justify-between"
-              style={{ minHeight: "600px" }}
-            >
-              
-              {/* MAIN CONTENT WRAPPER */}
-              <div className="space-y-6">
-                
-                {/* TOP HEADER SECTION: CUSTOM LOGO + PLAN NAME BADGE */}
-                <div className="flex items-center justify-between mb-6 pt-2">
-                  
-                  {/* Custom Logo Area (Larger image size on upload) */}
-                  <div className="flex items-center">
-                    {sistemasLogo ? (
-                      <div className="max-h-28 max-w-[300px] p-2 bg-white rounded-2xl shadow-md border border-slate-200 flex items-center justify-center shrink-0">
-                        <img src={sistemasLogo} alt="Logo Empresa" className="max-h-24 max-w-[280px] object-contain" />
-                      </div>
-                    ) : (
-                      <div className="border-2 border-dashed border-[#FF6B00] bg-[#FFF7ED] text-[#FF6B00] rounded-2xl p-4 sm:px-6 flex items-center gap-3 shrink-0 shadow-xs">
-                        <ImageIcon className="w-7 h-7 shrink-0 text-[#FF6B00]" />
-                        <div className="text-left">
-                          <span className="text-xs font-black uppercase tracking-wide block">Cargar Tu Logo Aquí</span>
-                          <span className="text-[10px] text-slate-600 font-medium block">Personaliza este arte con tu marca</span>
+                    {/* Image Container with Zoom Click */}
+                    <div
+                      onClick={() => setActiveModalImg({ title: plan.name, filename: plan.file })}
+                      className="relative aspect-[4/5] bg-slate-100 overflow-hidden cursor-pointer border-b border-slate-100"
+                      title="Haz clic para ampliar con zoom y lupa"
+                    >
+                      <img
+                        src={fileUrl}
+                        alt={`Arte comercial ${plan.name}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-slate-950/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
+                        <div className="bg-white/95 text-slate-900 px-3 py-1.5 rounded-xl text-xs font-black shadow-lg flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 transition-transform">
+                          <Eye className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Ver con Zoom / Lupa</span>
                         </div>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Top Dark Navy Pill Badge for Plan Name */}
-                  <div className="bg-[#1E293B] text-white px-6 sm:px-10 py-3 rounded-2xl shadow-md border border-slate-700 flex items-center justify-center text-center">
-                    <h3 className="text-xl sm:text-2xl font-black tracking-tight text-center uppercase leading-tight m-0 p-0 text-white flex items-center justify-center my-auto">
-                      {planSelectionMode === "individual" ? customPlanName : "Planes Comparativos"}
-                    </h3>
-                  </div>
-                </div>
-
-                {/* MIDDLE SECTION: MODULOS PRINCIPALES + METRICS */}
-                {planSelectionMode === "individual" ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-start my-6 relative z-10">
-                    
-                    {/* LEFT COLUMN: MODULOS PRINCIPALES */}
-                    <div className="sm:col-span-7 space-y-3">
-                      {/* Dark Pill Header */}
-                      <div className="bg-[#1E293B] text-white text-center py-2.5 px-4 rounded-xl text-sm font-extrabold tracking-wide shadow-xs flex items-center justify-center">
-                        <span className="leading-tight m-0 p-0 text-center text-white flex items-center justify-center my-auto">Módulos Principales</span>
-                      </div>
-
-                      {/* Modules List */}
-                      <div className="space-y-2 pl-1 pt-1">
-                        {customModules.map((mod, idx) => (
-                          <div key={idx} className="flex items-center gap-3">
-                            <div className="w-5 h-5 rounded-full bg-[#1E293B] flex items-center justify-center shrink-0 border border-slate-700 shadow-2xs relative my-auto">
-                              <Check className="w-3 h-3 text-[#FF6B00] stroke-[3.5]" />
-                            </div>
-                            <span className="text-xs sm:text-sm font-bold text-slate-800 leading-tight">
-                              {mod}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* VERTICAL DIVIDER */}
-                    <div className="hidden sm:block absolute left-7/12 top-0 bottom-0 w-[2px] bg-slate-300/80 -ml-3" />
-
-                    {/* RIGHT COLUMN: KEY METRICS */}
-                    <div className="sm:col-span-5 space-y-3 pl-0 sm:pl-3">
                       
-                      {/* Item 1: Comprobantes */}
-                      <div className="bg-[#F1F5F9] p-2.5 rounded-2xl border border-[#CBD5E1] flex items-center gap-3 shadow-2xs">
-                        <div className="w-9 h-9 rounded-full bg-[#1E293B] text-white flex items-center justify-center shrink-0 shadow-xs relative my-auto">
-                          <DollarSign className="w-4 h-4 text-amber-300" />
-                          <span className="absolute -bottom-1 -right-1 bg-[#FF6B00] text-white text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                            <Check className="w-2 h-2 stroke-[3]" />
+                      {/* Category Pill */}
+                      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                        <span className="bg-slate-950/80 backdrop-blur-xs text-white text-[10px] font-black px-2 py-0.5 rounded-md">
+                          #{plan.id}
+                        </span>
+                        {plan.categoria === "erp" && (
+                          <span className="bg-amber-500 text-slate-950 text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow-xs">
+                            ERP
                           </span>
-                        </div>
-                        <div className="flex items-center my-auto flex-1">
-                          <span className="text-xs sm:text-sm font-extrabold text-slate-900 leading-normal my-auto">
-                            {metricComprobantes}
+                        )}
+                        {plan.categoria === "contador" && (
+                          <span className="bg-purple-600 text-white text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow-xs">
+                            Contador
                           </span>
-                        </div>
-                      </div>
-
-                      {/* Item 2: Usuarios */}
-                      <div className="bg-[#F1F5F9] p-2.5 rounded-2xl border border-[#CBD5E1] flex items-center gap-3 shadow-2xs">
-                        <div className="w-9 h-9 rounded-full bg-[#1E293B] text-white flex items-center justify-center shrink-0 shadow-xs relative my-auto">
-                          <Users className="w-4 h-4 text-amber-300" />
-                          <span className="absolute -bottom-1 -right-1 bg-[#FF6B00] text-white text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                            <Check className="w-2 h-2 stroke-[3]" />
+                        )}
+                        {plan.categoria === "facturacion" && (
+                          <span className="bg-blue-600 text-white text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow-xs">
+                            Facturación
                           </span>
-                        </div>
-                        <div className="flex items-center my-auto flex-1">
-                          <span className="text-xs sm:text-sm font-extrabold text-slate-900 leading-normal my-auto">
-                            {metricUsuarios}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Item 3: Soporte */}
-                      <div className="bg-[#F1F5F9] p-2.5 rounded-2xl border border-[#CBD5E1] flex items-center gap-3 shadow-2xs">
-                        <div className="w-9 h-9 rounded-full bg-[#1E293B] text-white flex items-center justify-center shrink-0 shadow-xs relative my-auto">
-                          <Headphones className="w-4 h-4 text-amber-300" />
-                          <span className="absolute -bottom-1 -right-1 bg-[#FF6B00] text-white text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                            <Check className="w-2 h-2 stroke-[3]" />
-                          </span>
-                        </div>
-                        <div className="flex items-center my-auto flex-1">
-                          <span className="text-xs sm:text-sm font-extrabold text-slate-900 leading-normal my-auto">
-                            {metricSoporte}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Item 4: Capacitación */}
-                      <div className="bg-[#F1F5F9] p-2.5 rounded-2xl border border-[#CBD5E1] flex items-center gap-3 shadow-2xs">
-                        <div className="w-9 h-9 rounded-full bg-[#1E293B] text-white flex items-center justify-center shrink-0 shadow-xs relative my-auto">
-                          <Award className="w-4 h-4 text-amber-300" />
-                          <span className="absolute -bottom-1 -right-1 bg-[#FF6B00] text-white text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                            <Check className="w-2 h-2 stroke-[3]" />
-                          </span>
-                        </div>
-                        <div className="flex items-center my-auto flex-1">
-                          <span className="text-xs sm:text-sm font-extrabold text-slate-900 leading-normal my-auto">
-                            {metricCapacitacion}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Item 5: App Móvil */}
-                      <div className="bg-[#F1F5F9] p-2.5 rounded-2xl border border-[#CBD5E1] flex items-center gap-3 shadow-2xs">
-                        <div className="w-9 h-9 rounded-full bg-[#1E293B] text-white flex items-center justify-center shrink-0 shadow-xs relative my-auto">
-                          <Smartphone className="w-4 h-4 text-amber-300" />
-                          <span className="absolute -bottom-1 -right-1 bg-[#FF6B00] text-white text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                            <Check className="w-2 h-2 stroke-[3]" />
-                          </span>
-                        </div>
-                        <div className="flex items-center my-auto flex-1">
-                          <span className="text-xs sm:text-sm font-extrabold text-slate-900 leading-normal my-auto">
-                            {metricApp}
-                          </span>
-                        </div>
-                      </div>
-
-                    </div>
-
-                  </div>
-                ) : (
-                  /* MULTIPLE COMPARATIVE TABLE CANVAS */
-                  <div className="my-6 space-y-3 relative z-10">
-                    <div className="grid grid-cols-3 gap-3">
-                      {multiplePlansList.map((p, idx) => (
-                        <div key={idx} className="bg-white p-3 rounded-2xl border-2 border-slate-200 shadow-sm text-center space-y-2">
-                          <span className="text-xs font-black text-[#FF6B00] block uppercase">{p.category}</span>
-                          <h4 className="text-sm font-black text-slate-900 truncate">{p.name}</h4>
-                          <div className="bg-[#1E293B] text-white p-2.5 rounded-xl flex items-center justify-center">
-                            <span className="text-base font-black text-amber-300 leading-none">
-                              ${(taxMode === "con_iva" ? p.price * 1.15 : p.price).toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* HORIZONTAL DIVIDER */}
-                <div className="w-full h-[2px] bg-[#CBD5E1] my-4 relative z-10" />
-
-                {/* PROMOTIONS & PRICING BANNER */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
-                  {/* Left Promo text */}
-                  <div className="text-center sm:text-left">
-                    <p className="text-lg sm:text-xl font-black text-[#FF6B00] flex items-center justify-center sm:justify-start gap-1.5">
-                      <span>{customPromoText}</span>
-                      <Sparkles className="w-4 h-4 text-[#FF6B00] fill-[#FF6B00]" />
-                    </p>
-                  </div>
-
-                  {/* Right Price Box */}
-                  <div className="bg-white p-2.5 rounded-2xl border-2 border-[#1E293B] shadow-md flex flex-col items-center justify-center relative min-w-[210px]">
-                    {/* "DESDE" Orange Tag */}
-                    <span className="absolute -top-3 right-4 bg-[#FF6B00] text-white text-[10px] font-black px-3 py-1 rounded-md uppercase tracking-wider shadow-2xs leading-none flex items-center justify-center text-center">
-                      DESDE
-                    </span>
-
-                    <div className="flex items-center gap-2 pl-1 mb-1.5 w-full justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-orange-100 text-[#FF6B00] flex items-center justify-center shrink-0">
-                          <BarChart3 className="w-4 h-4" />
-                        </div>
-                        <div className="text-left leading-tight">
-                          <span className="text-[9px] font-black uppercase text-slate-500 block">PRECIO</span>
-                          <span className="text-[11px] font-black uppercase text-slate-900 block">{customPeriodText}</span>
-                        </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Blue Box with ONLY the price value occupying the entire container */}
-                    <div className="bg-[#1E293B] text-white px-6 py-3.5 rounded-xl font-black text-2xl sm:text-3xl tracking-tight text-center w-full flex items-center justify-center shadow-xs">
-                      <span className="text-amber-300 font-black leading-tight text-center block w-full my-auto">
-                        ${(taxMode === "con_iva" ? customPrice * 1.15 : customPrice).toFixed(2)}
-                      </span>
+                    {/* Card Content */}
+                    <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                      <div>
+                        <h3 className="text-base font-black text-slate-900 tracking-tight">
+                          {plan.name}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                          {plan.desc}
+                        </p>
+                        <div className="mt-2 text-[10px] font-mono text-slate-400 truncate">
+                          {plan.file}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setActiveModalImg({ title: plan.name, filename: plan.file })}
+                          className="p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer shrink-0"
+                          title="Previsualizar con Lupa y Zoom"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleCopyLink}
+                          className="p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer shrink-0"
+                          title="Copiar URL directa de la imagen"
+                        >
+                          {isCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleDownloadSingle}
+                          className="flex-1 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-2xs hover:shadow transition-all cursor-pointer active:scale-95"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Descargar</span>
+                        </button>
+                      </div>
                     </div>
-
-                    {/* Tax label */}
-                    <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-600 block text-center pt-1.5 leading-none">
-                      {taxMode === "con_iva" ? "ya incluye 15% IVA" : "no incluye impuestos"}
-                    </span>
                   </div>
-                </div>
-
-              </div>
-
-              {/* CLEAN FOOTER SLOGAN */}
-              <div className="relative z-10 pt-4 mt-6 border-t border-[#CBD5E1] text-center text-xs sm:text-sm font-black text-slate-800">
-                <span className="text-[#FF6B00]">✔</span> Más control. Más eficiencia. <span className="text-[#FF6B00]">Más resultados.</span>
-              </div>
-
+                );
+              })}
             </div>
-
           </div>
-
-        </div>
-      )}
+        );
+      })()}
 
       {/* ==================================================================================== */}
       {/* SUB-TAB 2: FIRMAS ELECTRÓNICAS (FLYER ART) */}
@@ -1880,6 +1339,15 @@ Con nuestro Sistema de Facturación y ERP Empresarial obtienes:
 
         </div>
       )}
+
+      {/* Lightbox Preview Modal with Zoom and Magnifier for Official Plan Arts */}
+      <ImageZoomLightbox
+        isOpen={!!activeModalImg}
+        title={activeModalImg?.title || ""}
+        filename={activeModalImg?.filename || ""}
+        onClose={() => setActiveModalImg(null)}
+        badgeText="Arte Oficial UpConta"
+      />
 
     </div>
   );

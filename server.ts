@@ -1562,7 +1562,64 @@ app.post("/api/news/base-socios", (req, res) => {
   res.status(400).json({ error: "Invalid baseCount parameter" });
 });
 
+// GET /brochures/:filename - Direct PDF serving with proper headers
+app.get("/brochures/:filename", (req, res) => {
+  try {
+    const rawFilename = req.params.filename;
+    const decodedFilename = decodeURIComponent(rawFilename);
+    const safeFilename = path.basename(decodedFilename);
+    let filePath = path.join(process.cwd(), "public", "brochures", safeFilename);
+
+    if (!fs.existsSync(filePath)) {
+      const nfcPath = path.join(process.cwd(), "public", "brochures", safeFilename.normalize("NFC"));
+      const nfdPath = path.join(process.cwd(), "public", "brochures", safeFilename.normalize("NFD"));
+      if (fs.existsSync(nfcPath)) filePath = nfcPath;
+      else if (fs.existsSync(nfdPath)) filePath = nfdPath;
+      else {
+        return res.status(404).send("Brochure no encontrado");
+      }
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="${safeFilename.replace(/"/g, '')}"; filename*=UTF-8''${encodeURIComponent(safeFilename)}`);
+    res.sendFile(filePath);
+  } catch (err) {
+    console.error("Error serving brochure:", err);
+    res.status(500).send("Error al procesar el archivo");
+  }
+});
+
+// GET /api/brochures/download/:filename - Force download attachment
+app.get("/api/brochures/download/:filename", (req, res) => {
+  try {
+    const rawFilename = req.params.filename;
+    const decodedFilename = decodeURIComponent(rawFilename);
+    const safeFilename = path.basename(decodedFilename);
+    let filePath = path.join(process.cwd(), "public", "brochures", safeFilename);
+
+    if (!fs.existsSync(filePath)) {
+      const nfcPath = path.join(process.cwd(), "public", "brochures", safeFilename.normalize("NFC"));
+      const nfdPath = path.join(process.cwd(), "public", "brochures", safeFilename.normalize("NFD"));
+      if (fs.existsSync(nfcPath)) filePath = nfcPath;
+      else if (fs.existsSync(nfdPath)) filePath = nfdPath;
+      else {
+        return res.status(404).json({ error: "Brochure no encontrado" });
+      }
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${safeFilename.replace(/"/g, '')}"; filename*=UTF-8''${encodeURIComponent(safeFilename)}`);
+    res.sendFile(filePath);
+  } catch (err) {
+    console.error("Error downloading brochure:", err);
+    res.status(500).json({ error: "Error al descargar el archivo" });
+  }
+});
+
 async function startServer() {
+  // Explicitly serve public folder assets (artes, logos, icons)
+  app.use(express.static(path.join(process.cwd(), "public")));
+
   // Serve static or Vite middleware
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
